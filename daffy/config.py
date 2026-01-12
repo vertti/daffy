@@ -52,57 +52,41 @@ def _validate_int_config(daffy_config: dict[str, Any], key: str, min_value: int 
     return value
 
 
+_BOOL_KEYS = [_KEY_STRICT, _KEY_LAZY, _KEY_ALLOW_EMPTY]
+_INT_KEYS = [_KEY_ROW_VALIDATION_MAX_ERRORS, _KEY_CHECKS_MAX_SAMPLES]
+
+_DEFAULTS: dict[str, Any] = {
+    _KEY_STRICT: _DEFAULT_STRICT,
+    _KEY_LAZY: _DEFAULT_LAZY,
+    _KEY_ROW_VALIDATION_MAX_ERRORS: _DEFAULT_MAX_ERRORS,
+    _KEY_CHECKS_MAX_SAMPLES: _DEFAULT_CHECKS_MAX_SAMPLES,
+    _KEY_ALLOW_EMPTY: _DEFAULT_ALLOW_EMPTY,
+}
+
+
 def load_config() -> dict[str, Any]:
-    """Load daffy configuration from pyproject.toml.
+    """Load daffy configuration from pyproject.toml."""
+    config = dict(_DEFAULTS)
 
-    Returns:
-        dict: Configuration dictionary with daffy settings
-
-    """
-    default_config = {
-        _KEY_STRICT: _DEFAULT_STRICT,
-        _KEY_LAZY: _DEFAULT_LAZY,
-        _KEY_ROW_VALIDATION_MAX_ERRORS: _DEFAULT_MAX_ERRORS,
-        _KEY_CHECKS_MAX_SAMPLES: _DEFAULT_CHECKS_MAX_SAMPLES,
-        _KEY_ALLOW_EMPTY: _DEFAULT_ALLOW_EMPTY,
-    }
-
-    # Try to find pyproject.toml in the current directory or parent directories
     config_path = find_config_file()
     if not config_path:
-        return default_config
+        return config
 
     try:
         with Path(config_path).open("rb") as f:
-            pyproject = tomli.load(f)
+            daffy_config = tomli.load(f).get("tool", {}).get("daffy", {})
 
-        # Extract daffy configuration if it exists
-        daffy_config = pyproject.get("tool", {}).get("daffy", {})
+        for key in _BOOL_KEYS:
+            if (value := _validate_bool_config(daffy_config, key)) is not None:
+                config[key] = value
 
-        # Update default config with validated values from pyproject.toml
-        strict = _validate_bool_config(daffy_config, _KEY_STRICT)
-        if strict is not None:
-            default_config[_KEY_STRICT] = strict
-
-        lazy = _validate_bool_config(daffy_config, _KEY_LAZY)
-        if lazy is not None:
-            default_config[_KEY_LAZY] = lazy
-
-        max_errors = _validate_int_config(daffy_config, _KEY_ROW_VALIDATION_MAX_ERRORS)
-        if max_errors is not None:
-            default_config[_KEY_ROW_VALIDATION_MAX_ERRORS] = max_errors
-
-        max_samples = _validate_int_config(daffy_config, _KEY_CHECKS_MAX_SAMPLES)
-        if max_samples is not None:
-            default_config[_KEY_CHECKS_MAX_SAMPLES] = max_samples
-
-        allow_empty = _validate_bool_config(daffy_config, _KEY_ALLOW_EMPTY)
-        if allow_empty is not None:
-            default_config[_KEY_ALLOW_EMPTY] = allow_empty
+        for key in _INT_KEYS:
+            if (value := _validate_int_config(daffy_config, key)) is not None:
+                config[key] = value
     except (FileNotFoundError, tomli.TOMLDecodeError):
-        pass  # Use defaults if config file missing or malformed
+        pass
 
-    return default_config
+    return config
 
 
 def find_config_file() -> str | None:
@@ -130,6 +114,14 @@ def _get_bool_config(param: bool | None, key: str) -> bool:
     if param is not None:
         return param
     return bool(get_config()[key])
+
+
+def _get_int_config(param: int | None, key: str, min_value: int = 1) -> int:
+    """Return param if provided, otherwise config value. Validates minimum."""
+    value = param if param is not None else int(get_config()[key])
+    if value < min_value:
+        raise ValueError(f"{key} must be >= {min_value}, got {value}")
+    return value
 
 
 def get_strict(strict_param: bool | None = None) -> bool:
@@ -162,22 +154,12 @@ def get_lazy(lazy_param: bool | None = None) -> bool:
 
 def get_row_validation_max_errors() -> int:
     """Get max_errors setting for row validation."""
-    value = int(get_config()[_KEY_ROW_VALIDATION_MAX_ERRORS])
-    if value < 1:
-        raise ValueError(f"row_validation_max_errors must be >= 1, got {value}")
-    return value
+    return _get_int_config(None, _KEY_ROW_VALIDATION_MAX_ERRORS)
 
 
 def get_checks_max_samples(max_samples: int | None = None) -> int:
     """Get max_samples setting for value checks."""
-    if max_samples is not None:
-        if max_samples < 1:
-            raise ValueError(f"checks_max_samples must be >= 1, got {max_samples}")
-        return max_samples
-    value = int(get_config()[_KEY_CHECKS_MAX_SAMPLES])
-    if value < 1:
-        raise ValueError(f"checks_max_samples must be >= 1, got {value}")
-    return value
+    return _get_int_config(max_samples, _KEY_CHECKS_MAX_SAMPLES)
 
 
 def get_allow_empty(allow_empty_param: bool | None = None) -> bool:
