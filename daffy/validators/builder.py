@@ -52,7 +52,7 @@ def _expand_specs(specs: dict[str, Any] | list[str], resolved: dict[str, list[st
     return result_list
 
 
-def build_validation_pipeline(  # noqa: C901, PLR0912
+def build_validation_pipeline(  # noqa: C901
     columns: Sequence[Any] | dict[Any, Any] | None,
     strict: bool,
     lazy: bool,
@@ -67,7 +67,7 @@ def build_validation_pipeline(  # noqa: C901, PLR0912
     """Build a validation pipeline from decorator parameters."""
     pipeline = ValidationPipeline(lazy=lazy)
 
-    has_shape_constraints = any([min_rows is not None, max_rows is not None, exact_rows is not None, not allow_empty])
+    has_shape_constraints = min_rows is not None or max_rows is not None or exact_rows is not None or not allow_empty
     if has_shape_constraints:
         pipeline.add(
             ShapeValidator(min_rows=min_rows, max_rows=max_rows, exact_rows=exact_rows, allow_empty=allow_empty)
@@ -77,31 +77,21 @@ def build_validation_pipeline(  # noqa: C901, PLR0912
         spec = parse_column_spec(columns)
 
         missing_required, resolved_required = _resolve_columns(spec.required_columns, df_columns)
-        if missing_required or spec.required_columns:
+        if missing_required:
             pipeline.add(ColumnsExistValidator(missing_required, df_columns))
 
         _, resolved_optional = _resolve_columns(spec.optional_columns, df_columns)
         _, resolved_all = _resolve_columns(spec.all_columns, df_columns)
 
-        if spec.dtype_constraints:
-            expanded = _expand_specs(spec.dtype_constraints, resolved_all)
-            if expanded:
-                pipeline.add(DtypeValidator(expanded))  # type: ignore[arg-type]
-
-        if spec.non_nullable_columns:
-            expanded = _expand_specs(spec.non_nullable_columns, resolved_all)
-            if expanded:
-                pipeline.add(NullableValidator(expanded))  # type: ignore[arg-type]
-
-        if spec.unique_columns:
-            expanded = _expand_specs(spec.unique_columns, resolved_all)
-            if expanded:
-                pipeline.add(UniqueValidator(expanded))  # type: ignore[arg-type]
-
-        if spec.checks_by_column:
-            expanded = _expand_specs(spec.checks_by_column, resolved_all)
-            if expanded:
-                pipeline.add(ChecksValidator(expanded))  # type: ignore[arg-type]
+        validators = [
+            (spec.dtype_constraints, DtypeValidator),
+            (spec.non_nullable_columns, NullableValidator),
+            (spec.unique_columns, UniqueValidator),
+            (spec.checks_by_column, ChecksValidator),
+        ]
+        for source, validator_cls in validators:
+            if source and (expanded := _expand_specs(source, resolved_all)):
+                pipeline.add(validator_cls(expanded))  # type: ignore[arg-type]
 
         if strict:
             all_matched = set()

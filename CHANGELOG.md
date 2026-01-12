@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.5.1
+
+### Internal Improvements
+
+- Simplified config loading by using loops over key lists instead of repetitive if-statements
+- Added `_get_int_config` helper to deduplicate integer config getters
+- Extracted `_log_dataframe` helper from duplicate logging functions
+- Replaced repeated expand+add blocks in pipeline builder with data-driven loop
+
 ## 2.5.0
 
 ### Internal Improvements

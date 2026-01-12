@@ -89,17 +89,14 @@ def describe_dataframe(df: Any, include_dtypes: bool = False) -> str:
     return result
 
 
-def log_dataframe_input(level: int, func_name: str, df: Any, include_dtypes: bool) -> None:
+def _log_dataframe(level: int, func_name: str, df: Any, include_dtypes: bool, context: str) -> None:
     if is_supported_dataframe(df):
-        logging.log(  # noqa: LOG015
-            level,
-            f"Function {func_name} parameters contained a DataFrame: {describe_dataframe(df, include_dtypes)}",  # noqa: G004
-        )
+        logging.log(level, f"Function {func_name} {context}: {describe_dataframe(df, include_dtypes)}")  # noqa: LOG015, G004
+
+
+def log_dataframe_input(level: int, func_name: str, df: Any, include_dtypes: bool) -> None:
+    _log_dataframe(level, func_name, df, include_dtypes, "parameters contained a DataFrame")
 
 
 def log_dataframe_output(level: int, func_name: str, df: Any, include_dtypes: bool) -> None:
-    if is_supported_dataframe(df):
-        logging.log(  # noqa: LOG015
-            level,
-            f"Function {func_name} returned a DataFrame: {describe_dataframe(df, include_dtypes)}",  # noqa: G004
-        )
+    _log_dataframe(level, func_name, df, include_dtypes, "returned a DataFrame")

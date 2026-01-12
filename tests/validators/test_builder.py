@@ -69,7 +69,23 @@ class TestBuildValidationPipeline:
         assert len(pipeline) == 1
         assert isinstance(pipeline.validators[0], ShapeValidator)
 
-    def test_adds_columns_exist_validator(self) -> None:
+    def test_adds_columns_exist_validator_when_missing(self) -> None:
+        pipeline = build_validation_pipeline(
+            columns=["a", "b", "c"],
+            strict=False,
+            lazy=False,
+            composite_unique=None,
+            row_validator=None,
+            min_rows=None,
+            max_rows=None,
+            exact_rows=None,
+            allow_empty=True,
+            df_columns=["a", "b"],
+        )
+
+        assert any(isinstance(v, ColumnsExistValidator) for v in pipeline.validators)
+
+    def test_skips_columns_exist_validator_when_all_present(self) -> None:
         pipeline = build_validation_pipeline(
             columns=["a", "b"],
             strict=False,
@@ -83,7 +99,7 @@ class TestBuildValidationPipeline:
             df_columns=["a", "b"],
         )
 
-        assert any(isinstance(v, ColumnsExistValidator) for v in pipeline.validators)
+        assert not any(isinstance(v, ColumnsExistValidator) for v in pipeline.validators)
 
     def test_adds_dtype_validator(self) -> None:
         pipeline = build_validation_pipeline(
