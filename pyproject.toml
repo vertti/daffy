@@ -55,7 +55,7 @@ test = [
 # Development tools - pinned for dependabot updates
 dev = [
     "ruff==0.14.13",
-    "pyrefly==0.46.0",
+    "pyrefly==0.48.2",
     "skylos==3.0.3",
     "vulture==2.14",
     "coverage[toml]==7.13.1",
