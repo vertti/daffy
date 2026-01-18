@@ -72,10 +72,11 @@ jobs:
         run: uv run pytest --cov --cov-report=xml tests/
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
+        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
         with:
           files: ./coverage.xml
-          fail_ci_if_error: false
+          fail_ci_if_error: true
+          verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
   # Test optional dependencies scenarios with pytest (always passes)
