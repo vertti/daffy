@@ -49,7 +49,7 @@ test = [
     "pydantic>=2.4.0",
     "modin[ray]>=0.30.0; python_version < '3.14'",
     "pyarrow>=14.0.0",
-    "hypothesis==6.151.0",
+    "hypothesis==6.151.1",
 ]
 
 # Development tools - pinned for dependabot updates
