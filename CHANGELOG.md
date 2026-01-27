@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.6.0
+
+### Added
+
+- Support for pandas 3.x (requires Python 3.11+)
+
 ## 2.5.1
 
 ### Internal Improvements

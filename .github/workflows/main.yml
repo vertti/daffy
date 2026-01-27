@@ -106,7 +106,11 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.13"]
-        scenario: ["pandas-only", "polars-only", "both", "pandas-no-pydantic", "none"]
+        scenario: ["pandas-only", "polars-only", "both", "pandas-no-pydantic", "none", "pandas-2.x-only", "pandas-3.x-only"]
+        exclude:
+          # pandas 3.x requires Python 3.11+
+          - python-version: "3.10"
+            scenario: "pandas-3.x-only"
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
         with:
@@ -149,3 +153,15 @@ jobs:
         run: |
           WHEEL=$(ls dist/daffy-*.whl | head -n1)
           uv run --python ${{ matrix.python-version }} --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
+
+      - name: Test pandas 2.x only scenario
+        if: matrix.scenario == 'pandas-2.x-only'
+        run: |
+          WHEEL=$(ls dist/daffy-*.whl | head -n1)
+          uv run --python ${{ matrix.python-version }} --no-project --with "pandas>=1.5.1,<3.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pandas
+
+      - name: Test pandas 3.x only scenario
+        if: matrix.scenario == 'pandas-3.x-only'
+        run: |
+          WHEEL=$(ls dist/daffy-*.whl | head -n1)
+          uv run --python ${{ matrix.python-version }} --no-project --with "pandas>=3.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pandas
