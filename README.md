@@ -5,7 +5,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/daffy)](https://pypi.org/project/daffy/)
 [![Docs](https://readthedocs.org/projects/daffy/badge/?version=latest)](https://daffy.readthedocs.io)
 [![CI](https://github.com/vertti/daffy/actions/workflows/main.yml/badge.svg)](https://github.com/vertti/daffy/actions)
-[![codecov](https://codecov.io/gh/vertti/daffy/graph/badge.svg?token=00OL75TW4W)](https://codecov.io/gh/vertti/daffy)
+[![codecov](https://codecov.io/gh/vertti/daffy/graph/badge.svg?token=CISZTQ2XMS)](https://codecov.io/gh/vertti/daffy)
 
 **Validate your pandas and Polars DataFrames at runtime with simple Python decorators.** Daffy catches missing columns, wrong data types, and invalid values before they cause downstream errors in your data pipeline.
 
