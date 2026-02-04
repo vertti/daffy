@@ -88,7 +88,7 @@ def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int
         "ne": lambda: nws == check_value,
         "isin": lambda: ~nws.is_in(check_value),
         "notin": lambda: nws.is_in(check_value),
-        "notnull": lambda: nws.is_null(),
+        "notnull": lambda: nws.is_null(),  # noqa: PLW0108
         "str_regex": lambda: ~nws.str.contains(f"^(?:{check_value})"),
         "str_startswith": lambda: ~nws.str.starts_with(check_value),
         "str_endswith": lambda: ~nws.str.ends_with(check_value),
