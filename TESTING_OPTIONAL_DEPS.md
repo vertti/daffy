@@ -4,7 +4,7 @@ This document describes how to test daffy's optional dependency support for Data
 
 ## Background
 
-Daffy now supports optional dependencies - you can install it with just pandas, just polars, or both. This testing setup ensures that all combinations work correctly.
+Daffy supports optional dependencies: you can install it with pandas, polars, pyarrow, modin, or combinations of these. This testing setup ensures that supported combinations work correctly.
 
 ## Automated Testing
 
@@ -79,16 +79,22 @@ uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
 - Both DataFrame types work
 - Error messages mention available DataFrame types
 
+#### PyArrow Only
+
+- `HAS_PYARROW = True` (other `HAS_*` flags False)
+- PyArrow tables are accepted as DataFrame inputs/outputs
+- Error messages mention "PyArrow DataFrame"
+
 #### No Libraries
 
-- Import should fail with: `ImportError: No DataFrame library found. Install a supported library: pip install pandas`
+- Import should fail with: `ImportError: No supported DataFrame library found...`
 
 ## Implementation Details
 
 The optional dependency support works through:
 
-1. **Lazy imports** in `daffy/utils.py` with try/except blocks
-2. **Runtime type checking** that builds DataFrame type tuples dynamically
+1. **Module detection** in `daffy/dataframe_types.py` using `importlib.util.find_spec`
+2. **Narwhals runtime compatibility checks** in `daffy/narwhals_compat.py`
 3. **Conditional type hints** using `TYPE_CHECKING` for static analysis
 4. **Dynamic error messages** that reflect available libraries
 
@@ -97,7 +103,7 @@ The optional dependency support works through:
 When adding tests for optional dependencies:
 
 1. Use the simple approach in `test_optional_dependencies.py`
-2. Check `HAS_PANDAS` and `HAS_POLARS` flags to conditionally run tests
+2. Check `HAS_PANDAS`, `HAS_POLARS`, `HAS_MODIN`, and `HAS_PYARROW` flags to conditionally run tests
 3. Use `pytest.mark.skipif` for tests requiring specific libraries
 4. Test error message content to ensure it reflects available libraries
 

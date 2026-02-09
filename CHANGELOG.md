@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Optional dependency detection now recognizes all advertised backends (Pandas, Polars, Modin, PyArrow)
+- Early import failure now triggers only when none of the supported DataFrame libraries are installed
+- Updated optional dependency tests and isolation docs/scripts to align with the expanded backend detection contract
+
 ## 2.6.0
 
 ### Added

@@ -4,13 +4,21 @@ from typing import Any
 
 import pandas as pd
 import polars as pl
+import pyarrow as pa
 import pytest
 
 from daffy.narwhals_compat import is_supported_dataframe
 
 
 class TestIsSupportedDataframe:
-    @pytest.mark.parametrize("df", [pd.DataFrame({"A": [1, 2, 3]}), pl.DataFrame({"A": [1, 2, 3]})])
+    @pytest.mark.parametrize(
+        "df",
+        [
+            pd.DataFrame({"A": [1, 2, 3]}),
+            pl.DataFrame({"A": [1, 2, 3]}),
+            pa.table({"A": [1, 2, 3]}),
+        ],
+    )
     def test_dataframes_supported(self, df: Any) -> None:
         assert is_supported_dataframe(df) is True
 

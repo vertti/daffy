@@ -2,7 +2,7 @@
 r"""Manual script to test daffy with different dependency combinations.
 
 This script helps verify that the optional dependencies work correctly
-by testing with different combinations of pandas/polars/pydantic.
+by testing with different combinations of pandas/polars/pyarrow/pydantic.
 
 Usage:
     # First build a wheel to avoid dev dependencies
@@ -266,13 +266,27 @@ def test_none() -> bool:
         return False
     print("✅ Polars correctly not available")
 
+    if importlib.util.find_spec("modin") is not None:
+        print("❌ Modin should not be available")
+        print("   Note: This test requires a clean environment without supported DataFrame libraries")
+        print("   This is expected to work only in CI with isolated environments")
+        return False
+    print("✅ Modin correctly not available")
+
+    if importlib.util.find_spec("pyarrow") is not None:
+        print("❌ PyArrow should not be available")
+        print("   Note: This test requires a clean environment without supported DataFrame libraries")
+        print("   This is expected to work only in CI with isolated environments")
+        return False
+    print("✅ PyArrow correctly not available")
+
     try:
-        from daffy.dataframe_types import HAS_PANDAS, HAS_POLARS  # noqa: F401
+        from daffy.dataframe_types import HAS_MODIN, HAS_PANDAS, HAS_POLARS, HAS_PYARROW  # noqa: F401
 
         print("❌ Should have failed during import")
         return False
     except ImportError as e:
-        expected_msg = "No DataFrame library found"
+        expected_msg = "No supported DataFrame library found"
         if expected_msg in str(e):
             print("✅ Correctly failed with expected error message")
             return True
