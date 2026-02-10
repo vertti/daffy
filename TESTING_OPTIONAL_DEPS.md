@@ -85,6 +85,12 @@ uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
 - PyArrow tables are accepted as DataFrame inputs/outputs
 - Error messages mention "PyArrow DataFrame"
 
+#### Modin Only
+
+- `HAS_MODIN = True` (other `HAS_*` flags False)
+- Modin DataFrames are accepted as DataFrame inputs/outputs
+- Error messages mention "Modin DataFrame"
+
 #### No Libraries
 
 - Import should fail with: `ImportError: No supported DataFrame library found...`

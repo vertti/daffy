@@ -33,7 +33,7 @@ HAS_PYARROW = _module_available("pyarrow")
 if not (HAS_PANDAS or HAS_POLARS or HAS_MODIN or HAS_PYARROW):  # pragma: no cover
     raise ImportError(
         "No supported DataFrame library found. Install at least one supported library: "
-        "pip install pandas or pip install polars or pip install pyarrow"
+        "pip install pandas or pip install polars or pip install modin or pip install pyarrow"
     )
 
 
