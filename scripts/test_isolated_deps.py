@@ -270,11 +270,9 @@ def test_modin_only() -> bool:
     print("✅ Polars correctly not available")
 
     if importlib.util.find_spec("pyarrow") is not None:
-        print("❌ PyArrow should not be available")
-        print("   Note: This test requires pyarrow not to be installed")
-        print("   This is expected to work only in CI with truly isolated environments")
-        return False
-    print("✅ PyArrow correctly not available")
+        print("INFO: PyArrow is available (transitive dependency of modin[ray] in this environment)")
+    else:
+        print("INFO: PyArrow not available")
 
     try:
         from daffy import df_in, df_out
@@ -287,7 +285,11 @@ def test_modin_only() -> bool:
         assert HAS_MODIN, f"HAS_MODIN should be True, got {HAS_MODIN}"
         assert HAS_PANDAS, f"HAS_PANDAS should be True with modin dependency, got {HAS_PANDAS}"
         assert not HAS_POLARS, f"HAS_POLARS should be False, got {HAS_POLARS}"
-        assert not HAS_PYARROW, f"HAS_PYARROW should be False, got {HAS_PYARROW}"
+        # HAS_PYARROW may be True depending on modin extras and resolver decisions.
+        if HAS_PYARROW:
+            print("INFO: HAS_PYARROW=True (allowed for modin scenario)")
+        else:
+            print("INFO: HAS_PYARROW=False")
         print("✅ Library detection correct")
 
         @df_in(columns=["A", "B"])

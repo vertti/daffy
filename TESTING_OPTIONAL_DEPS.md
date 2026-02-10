@@ -99,7 +99,8 @@ uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
 
 - `HAS_MODIN = True`
 - `HAS_PANDAS = True` is expected because Modin depends on pandas
-- Other backend flags (`HAS_POLARS`, `HAS_PYARROW`) should be False in this scenario
+- `HAS_POLARS` should be False in this scenario
+- `HAS_PYARROW` may be True or False depending on selected Modin extras/transitive dependencies
 - Modin DataFrames are accepted as DataFrame inputs/outputs
 - Error messages mention "Modin DataFrame"
 
