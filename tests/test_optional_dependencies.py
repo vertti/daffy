@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from daffy.dataframe_types import HAS_PANDAS, HAS_POLARS
+from daffy.dataframe_types import HAS_MODIN, HAS_PANDAS, HAS_POLARS, HAS_PYARROW
 
 
 class TestOptionalDependenciesDetection:
@@ -14,10 +14,14 @@ class TestOptionalDependenciesDetection:
         """Test that the detection flags exist and are boolean."""
         assert isinstance(HAS_PANDAS, bool)
         assert isinstance(HAS_POLARS, bool)
+        assert isinstance(HAS_MODIN, bool)
+        assert isinstance(HAS_PYARROW, bool)
 
     def test_at_least_one_library_available(self) -> None:
         """Test that at least one DataFrame library is available in test environment."""
-        assert HAS_PANDAS or HAS_POLARS, "At least one DataFrame library should be available for tests"
+        assert HAS_PANDAS or HAS_POLARS or HAS_MODIN or HAS_PYARROW, (
+            "At least one DataFrame library should be available for tests"
+        )
 
     def test_import_detection_consistency(self) -> None:
         """Test that import detection is consistent with actual imports."""
@@ -32,6 +36,12 @@ class TestOptionalDependenciesDetection:
             import polars as pl
 
             assert pl is not None
+
+        if HAS_PYARROW:
+            # If we detected pyarrow, we should be able to import it
+            import pyarrow as pa
+
+            assert pa is not None
 
     def test_error_messages_reflect_available_libraries(self) -> None:
         """Test that error messages reflect only available libraries."""
@@ -51,6 +61,10 @@ class TestOptionalDependenciesDetection:
             assert "Pandas" in error_msg
         if HAS_POLARS:
             assert "Polars" in error_msg
+        if HAS_MODIN:
+            assert "Modin" in error_msg
+        if HAS_PYARROW:
+            assert "PyArrow" in error_msg
 
     def test_dataframe_validation_works_with_available_libraries(self) -> None:
         """Test that DataFrame validation works with whatever libraries are available."""
@@ -81,6 +95,21 @@ class TestOptionalDependenciesDetection:
             polars_df = pl.DataFrame({"A": [1, 2], "B": [3, 4]})
             result = polars_test(polars_df)
             assert result.columns == ["A", "B", "C"]
+
+        if HAS_PYARROW:
+            import pyarrow as pa
+
+            @df_in(columns=["A", "B"])
+            @df_out(columns=["A", "B", "C"])
+            def pyarrow_test(df: Any) -> Any:
+                a_values = df.column("A").to_pylist()
+                b_values = df.column("B").to_pylist()
+                c_values = [a + b for a, b in zip(a_values, b_values, strict=False)]
+                return df.append_column("C", pa.array(c_values))
+
+            pyarrow_table = pa.table({"A": [1, 2], "B": [3, 4]})
+            result = pyarrow_test(pyarrow_table)
+            assert result.column_names == ["A", "B", "C"]
 
 
 def test_basic_import_works() -> None:
@@ -133,6 +162,14 @@ def test_describe_dataframe_with_dtypes() -> None:
         assert "columns: ['A', 'B']" in result
         assert "with dtypes" in result
 
+    if HAS_PYARROW:
+        import pyarrow as pa
+
+        pyarrow_table = pa.table({"A": [1, 2], "B": ["x", "y"]})
+        result = describe_dataframe(pyarrow_table, include_dtypes=True)
+        assert "columns: ['A', 'B']" in result
+        assert "with dtypes" in result
+
 
 def test_log_dataframe_functions() -> None:
     """Test DataFrame logging functions."""
@@ -164,3 +201,12 @@ def test_log_dataframe_functions() -> None:
         # These should not raise errors
         log_dataframe_input(logging.INFO, "test_func", polars_df, False)
         log_dataframe_output(logging.INFO, "test_func", polars_df, True)
+
+    if HAS_PYARROW:
+        import pyarrow as pa
+
+        pyarrow_table = pa.table({"A": [1, 2], "B": [3, 4]})
+
+        # These should not raise errors
+        log_dataframe_input(logging.INFO, "test_func", pyarrow_table, False)
+        log_dataframe_output(logging.INFO, "test_func", pyarrow_table, True)

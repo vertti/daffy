@@ -14,6 +14,11 @@ class TestIsSupportedDataframe:
     def test_dataframes_supported(self, df: Any) -> None:
         assert is_supported_dataframe(df) is True
 
+    def test_pyarrow_table_supported(self) -> None:
+        pa = pytest.importorskip("pyarrow")
+        pyarrow_table = pa.table({"A": [1, 2, 3]})
+        assert is_supported_dataframe(pyarrow_table) is True
+
     @pytest.mark.parametrize("obj", [[1, 2, 3], {"A": [1, 2, 3]}, "not a dataframe", None, 42])
     def test_non_dataframes_not_supported(self, obj: Any) -> None:
         assert is_supported_dataframe(obj) is False

@@ -4,7 +4,7 @@ This document describes how to test daffy's optional dependency support for Data
 
 ## Background
 
-Daffy now supports optional dependencies - you can install it with just pandas, just polars, or both. This testing setup ensures that all combinations work correctly.
+Daffy supports optional dependencies: you can install it with pandas, polars, pyarrow, modin, or combinations of these. This testing setup ensures that supported combinations work correctly.
 
 ## Automated Testing
 
@@ -17,6 +17,8 @@ The GitHub Actions workflow includes three separate jobs:
 3. **Isolation scenario tests** - Test each scenario in true isolation using built wheels:
    - `pandas-only` - Only pandas is available
    - `polars-only` - Only polars is available
+   - `pyarrow-only` - Only pyarrow is available
+   - `modin-only` - Modin is available (with pandas as dependency)
    - `both` - Both libraries available
    - `none` - No DataFrame libraries (should fail gracefully)
 
@@ -54,6 +56,14 @@ uv run --no-project --with "polars>=1.7.0" --with "$WHEEL" python scripts/test_i
 WHEEL=$(ls dist/daffy-*.whl | head -n1)
 uv run --no-project --with "pandas>=1.5.1" --with "polars>=1.7.0" --with "$WHEEL" python scripts/test_isolated_deps.py both
 
+# Test with pyarrow only
+WHEEL=$(ls dist/daffy-*.whl | head -n1)
+uv run --no-project --with "pyarrow>=14.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pyarrow
+
+# Test with modin only (modin installs pandas as a dependency)
+WHEEL=$(ls dist/daffy-*.whl | head -n1)
+uv run --no-project --with "modin[ray]>=0.30.0" --with "$WHEEL" python scripts/test_isolated_deps.py modin
+
 # Test with neither (should fail gracefully)
 WHEEL=$(ls dist/daffy-*.whl | head -n1)
 uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
@@ -79,16 +89,31 @@ uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
 - Both DataFrame types work
 - Error messages mention available DataFrame types
 
+#### PyArrow Only
+
+- `HAS_PYARROW = True` (other `HAS_*` flags False)
+- PyArrow tables are accepted as DataFrame inputs/outputs
+- Error messages mention "PyArrow DataFrame"
+
+#### Modin Only
+
+- `HAS_MODIN = True`
+- `HAS_PANDAS = True` is expected because Modin depends on pandas
+- `HAS_POLARS` should be False in this scenario
+- `HAS_PYARROW` may be True or False depending on selected Modin extras/transitive dependencies
+- Modin DataFrames are accepted as DataFrame inputs/outputs
+- Error messages mention "Modin DataFrame"
+
 #### No Libraries
 
-- Import should fail with: `ImportError: No DataFrame library found. Install a supported library: pip install pandas`
+- Import should fail with: `ImportError: No supported DataFrame library found...`
 
 ## Implementation Details
 
 The optional dependency support works through:
 
-1. **Lazy imports** in `daffy/utils.py` with try/except blocks
-2. **Runtime type checking** that builds DataFrame type tuples dynamically
+1. **Module detection** in `daffy/dataframe_types.py` using `importlib.util.find_spec`
+2. **Narwhals runtime compatibility checks** in `daffy/narwhals_compat.py`
 3. **Conditional type hints** using `TYPE_CHECKING` for static analysis
 4. **Dynamic error messages** that reflect available libraries
 
@@ -97,7 +122,7 @@ The optional dependency support works through:
 When adding tests for optional dependencies:
 
 1. Use the simple approach in `test_optional_dependencies.py`
-2. Check `HAS_PANDAS` and `HAS_POLARS` flags to conditionally run tests
+2. Check `HAS_PANDAS`, `HAS_POLARS`, `HAS_MODIN`, and `HAS_PYARROW` flags to conditionally run tests
 3. Use `pytest.mark.skipif` for tests requiring specific libraries
 4. Test error message content to ensure it reflects available libraries
 
