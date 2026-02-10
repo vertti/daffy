@@ -106,7 +106,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.13"]
-        scenario: ["pandas-only", "polars-only", "both", "pandas-no-pydantic", "none", "pandas-2.x-only", "pandas-3.x-only"]
+        scenario: ["pandas-only", "polars-only", "pyarrow-only", "modin-only", "both", "pandas-no-pydantic", "none", "pandas-2.x-only", "pandas-3.x-only"]
         exclude:
           # pandas 3.x requires Python 3.11+
           - python-version: "3.10"
@@ -141,6 +141,18 @@ jobs:
         run: |
           WHEEL=$(ls dist/daffy-*.whl | head -n1)
           uv run --python ${{ matrix.python-version }} --no-project --with "pandas>=1.5.1" --with "polars>=1.7.0" --with "$WHEEL" python scripts/test_isolated_deps.py both
+
+      - name: Test pyarrow-only scenario
+        if: matrix.scenario == 'pyarrow-only'
+        run: |
+          WHEEL=$(ls dist/daffy-*.whl | head -n1)
+          uv run --python ${{ matrix.python-version }} --no-project --with "pyarrow>=14.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pyarrow
+
+      - name: Test modin-only scenario
+        if: matrix.scenario == 'modin-only'
+        run: |
+          WHEEL=$(ls dist/daffy-*.whl | head -n1)
+          uv run --python ${{ matrix.python-version }} --no-project --with "modin[ray]>=0.30.0" --with "$WHEEL" python scripts/test_isolated_deps.py modin
 
       - name: Test pandas without pydantic scenario
         if: matrix.scenario == 'pandas-no-pydantic'

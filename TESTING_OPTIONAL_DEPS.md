@@ -17,6 +17,8 @@ The GitHub Actions workflow includes three separate jobs:
 3. **Isolation scenario tests** - Test each scenario in true isolation using built wheels:
    - `pandas-only` - Only pandas is available
    - `polars-only` - Only polars is available
+   - `pyarrow-only` - Only pyarrow is available
+   - `modin-only` - Modin is available (with pandas as dependency)
    - `both` - Both libraries available
    - `none` - No DataFrame libraries (should fail gracefully)
 
@@ -54,6 +56,14 @@ uv run --no-project --with "polars>=1.7.0" --with "$WHEEL" python scripts/test_i
 WHEEL=$(ls dist/daffy-*.whl | head -n1)
 uv run --no-project --with "pandas>=1.5.1" --with "polars>=1.7.0" --with "$WHEEL" python scripts/test_isolated_deps.py both
 
+# Test with pyarrow only
+WHEEL=$(ls dist/daffy-*.whl | head -n1)
+uv run --no-project --with "pyarrow>=14.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pyarrow
+
+# Test with modin only (modin installs pandas as a dependency)
+WHEEL=$(ls dist/daffy-*.whl | head -n1)
+uv run --no-project --with "modin[ray]>=0.30.0" --with "$WHEEL" python scripts/test_isolated_deps.py modin
+
 # Test with neither (should fail gracefully)
 WHEEL=$(ls dist/daffy-*.whl | head -n1)
 uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
@@ -87,7 +97,9 @@ uv run --no-project --with "$WHEEL" python scripts/test_isolated_deps.py none
 
 #### Modin Only
 
-- `HAS_MODIN = True` (other `HAS_*` flags False)
+- `HAS_MODIN = True`
+- `HAS_PANDAS = True` is expected because Modin depends on pandas
+- Other backend flags (`HAS_POLARS`, `HAS_PYARROW`) should be False in this scenario
 - Modin DataFrames are accepted as DataFrame inputs/outputs
 - Error messages mention "Modin DataFrame"
 

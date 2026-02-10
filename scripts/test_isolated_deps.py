@@ -21,6 +21,14 @@ Usage:
     uv run --no-project --with "pandas>=1.5.1" --with "polars>=1.7.0" --with "$WHEEL" \\
         python scripts/test_isolated_deps.py both
 
+    # Test with pyarrow only
+    WHEEL=$(ls dist/daffy-*.whl | head -n1)
+    uv run --no-project --with "pyarrow>=14.0.0" --with "$WHEEL" python scripts/test_isolated_deps.py pyarrow
+
+    # Test with modin only (modin installs pandas as a dependency)
+    WHEEL=$(ls dist/daffy-*.whl | head -n1)
+    uv run --no-project --with "modin[ray]>=0.30.0" --with "$WHEEL" python scripts/test_isolated_deps.py modin
+
     # Test pandas without pydantic
     WHEEL=$(ls dist/daffy-*.whl | head -n1)
     uv run --no-project --with "pandas>=1.5.1" --with "$WHEEL" python scripts/test_isolated_deps.py pandas-no-pydantic
@@ -31,6 +39,7 @@ Usage:
 """
 
 import importlib.util
+import os
 import sys
 from typing import Any
 
@@ -176,6 +185,133 @@ def test_both() -> bool:
         return False
 
 
+def test_pyarrow_only() -> bool:
+    """Test daffy with only pyarrow installed."""
+    print("Testing pyarrow-only configuration...")
+
+    if importlib.util.find_spec("pyarrow") is None:
+        print("❌ PyArrow not available")
+        return False
+    print("✅ PyArrow import successful")
+
+    if importlib.util.find_spec("pandas") is not None:
+        print("❌ Pandas should not be available")
+        print("   Note: This test requires pandas not to be installed")
+        print("   This is expected to work only in CI with truly isolated environments")
+        return False
+    print("✅ Pandas correctly not available")
+
+    if importlib.util.find_spec("polars") is not None:
+        print("❌ Polars should not be available")
+        print("   Note: This test requires polars not to be installed")
+        print("   This is expected to work only in CI with truly isolated environments")
+        return False
+    print("✅ Polars correctly not available")
+
+    if importlib.util.find_spec("modin") is not None:
+        print("❌ Modin should not be available")
+        print("   Note: This test requires modin not to be installed")
+        print("   This is expected to work only in CI with truly isolated environments")
+        return False
+    print("✅ Modin correctly not available")
+
+    try:
+        import pyarrow as pa
+
+        from daffy import df_in, df_out
+        from daffy.dataframe_types import HAS_MODIN, HAS_PANDAS, HAS_POLARS, HAS_PYARROW
+
+        assert not HAS_PANDAS, f"HAS_PANDAS should be False, got {HAS_PANDAS}"
+        assert not HAS_POLARS, f"HAS_POLARS should be False, got {HAS_POLARS}"
+        assert not HAS_MODIN, f"HAS_MODIN should be False, got {HAS_MODIN}"
+        assert HAS_PYARROW, f"HAS_PYARROW should be True, got {HAS_PYARROW}"
+        print("✅ Library detection correct")
+
+        @df_in(columns=["A", "B"])
+        @df_out(columns=["A", "B", "C"])
+        def test_func(df: Any) -> Any:
+            a_values = df.column("A").to_pylist()
+            b_values = df.column("B").to_pylist()
+            c_values = [a + b for a, b in zip(a_values, b_values, strict=False)]
+            return df.append_column("C", pa.array(c_values))
+
+        table = pa.table({"A": [1, 2], "B": [3, 4]})
+        result = test_func(table)
+        assert result.column_names == ["A", "B", "C"], f"Wrong columns: {result.column_names}"
+        print("✅ Decorators work correctly")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return False
+
+
+def test_modin_only() -> bool:
+    """Test daffy with modin installed.
+
+    Note: Modin depends on pandas, so HAS_PANDAS is expected to be True as well.
+    """
+    print("Testing modin-only configuration...")
+
+    if importlib.util.find_spec("modin") is None:
+        print("❌ Modin not available")
+        return False
+    print("✅ Modin import successful")
+
+    if importlib.util.find_spec("polars") is not None:
+        print("❌ Polars should not be available")
+        print("   Note: This test requires polars not to be installed")
+        print("   This is expected to work only in CI with truly isolated environments")
+        return False
+    print("✅ Polars correctly not available")
+
+    if importlib.util.find_spec("pyarrow") is not None:
+        print("❌ PyArrow should not be available")
+        print("   Note: This test requires pyarrow not to be installed")
+        print("   This is expected to work only in CI with truly isolated environments")
+        return False
+    print("✅ PyArrow correctly not available")
+
+    try:
+        from daffy import df_in, df_out
+        from daffy.dataframe_types import HAS_MODIN, HAS_PANDAS, HAS_POLARS, HAS_PYARROW
+
+        # Ensure modin uses a deterministic engine in isolated environments.
+        os.environ.setdefault("MODIN_ENGINE", "ray")
+        import modin.pandas as mpd
+
+        assert HAS_MODIN, f"HAS_MODIN should be True, got {HAS_MODIN}"
+        assert HAS_PANDAS, f"HAS_PANDAS should be True with modin dependency, got {HAS_PANDAS}"
+        assert not HAS_POLARS, f"HAS_POLARS should be False, got {HAS_POLARS}"
+        assert not HAS_PYARROW, f"HAS_PYARROW should be False, got {HAS_PYARROW}"
+        print("✅ Library detection correct")
+
+        @df_in(columns=["A", "B"])
+        @df_out(columns=["A", "B", "C"])
+        def test_func(df: Any) -> Any:
+            df = df.copy()
+            df["C"] = df["A"] + df["B"]
+            return df
+
+        df = mpd.DataFrame({"A": [1, 2], "B": [3, 4]})
+        result = test_func(df)
+        assert list(result.columns) == ["A", "B", "C"], f"Wrong columns: {list(result.columns)}"
+        print("✅ Decorators work correctly")
+
+        return True
+
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return False
+
+
 def test_pandas_no_pydantic() -> bool:
     """Test daffy with pandas but without pydantic."""
     print("Testing pandas without pydantic configuration...")
@@ -310,6 +446,10 @@ if __name__ == "__main__":
         success = test_polars_only()
     elif test_type == "both":
         success = test_both()
+    elif test_type == "pyarrow":
+        success = test_pyarrow_only()
+    elif test_type == "modin":
+        success = test_modin_only()
     elif test_type == "pandas-no-pydantic":
         success = test_pandas_no_pydantic()
     elif test_type == "none":
