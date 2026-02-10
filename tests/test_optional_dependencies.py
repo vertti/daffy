@@ -19,9 +19,9 @@ class TestOptionalDependenciesDetection:
 
     def test_at_least_one_library_available(self) -> None:
         """Test that at least one DataFrame library is available in test environment."""
-        assert (
-            HAS_PANDAS or HAS_POLARS or HAS_MODIN or HAS_PYARROW
-        ), "At least one DataFrame library should be available for tests"
+        assert HAS_PANDAS or HAS_POLARS or HAS_MODIN or HAS_PYARROW, (
+            "At least one DataFrame library should be available for tests"
+        )
 
     def test_import_detection_consistency(self) -> None:
         """Test that import detection is consistent with actual imports."""
