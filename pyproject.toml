@@ -33,6 +33,11 @@ dependencies = [
     "narwhals>=2.14.0",
 ]
 
+[project.optional-dependencies]
+pydantic = [
+    "pydantic>=2.4.0",
+]
+
 [project.urls]
 homepage = "https://github.com/vertti/daffy"
 repository = "https://github.com/vertti/daffy"
@@ -181,4 +186,3 @@ ignore = [
 python-version = "3.10"
 untyped-def-behavior = "check-and-infer-return-any"
 permissive-ignores = true
-

@@ -429,7 +429,7 @@ In addition to column validation, Daffy supports row-level validation using Pyda
 First, install Pydantic if you haven't already:
 
 ```bash
-pip install 'pydantic>=2.4.0'
+pip install 'daffy[pydantic]'
 ```
 
 Define a Pydantic model describing your expected row structure:
