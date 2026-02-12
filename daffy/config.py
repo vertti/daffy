@@ -90,9 +90,16 @@ def load_config() -> dict[str, Any]:
 
 
 def find_config_file() -> str | None:
-    """Find pyproject.toml in the current working directory."""
-    path = Path.cwd() / "pyproject.toml"
-    return str(path) if path.is_file() else None
+    """Find pyproject.toml by walking up from the current working directory."""
+    current = Path.cwd()
+    while True:
+        candidate = current / "pyproject.toml"
+        if candidate.is_file():
+            return str(candidate)
+        parent = current.parent
+        if parent == current:
+            return None
+        current = parent
 
 
 @lru_cache(maxsize=1)

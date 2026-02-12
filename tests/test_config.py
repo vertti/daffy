@@ -5,7 +5,14 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from daffy.config import clear_config_cache, get_checks_max_samples, get_config, get_strict
+from daffy.config import (
+    clear_config_cache,
+    find_config_file,
+    get_checks_max_samples,
+    get_config,
+    get_strict,
+    load_config,
+)
 
 
 def test_get_config_default() -> None:
@@ -258,3 +265,59 @@ row_validation_max_errors = 0
                 load_config()
             assert "row_validation_max_errors" in str(exc_info.value)
             assert ">= 1" in str(exc_info.value)
+
+
+class TestFindConfigFileParentSearch:
+    """Tests for parent directory search in find_config_file()."""
+
+    def test_finds_config_in_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            sub = Path(root) / "sub"
+            sub.mkdir()
+            (Path(root) / "pyproject.toml").write_text("[tool.daffy]\nstrict = true\n")
+
+            with patch("daffy.config.Path.cwd", return_value=sub):
+                result = find_config_file()
+                assert result == str(Path(root) / "pyproject.toml")
+
+    def test_closest_config_wins(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            sub = Path(root) / "sub"
+            sub.mkdir()
+            (Path(root) / "pyproject.toml").write_text("[tool.daffy]\nstrict = false\n")
+            (sub / "pyproject.toml").write_text("[tool.daffy]\nstrict = true\n")
+
+            with patch("daffy.config.Path.cwd", return_value=sub):
+                result = find_config_file()
+                assert result == str(sub / "pyproject.toml")
+
+    def test_multi_level_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            deep = Path(root) / "a" / "b" / "c"
+            deep.mkdir(parents=True)
+            (Path(root) / "pyproject.toml").write_text("[tool.daffy]\n")
+
+            with patch("daffy.config.Path.cwd", return_value=deep):
+                result = find_config_file()
+                assert result == str(Path(root) / "pyproject.toml")
+
+    def test_returns_none_at_filesystem_root(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # No pyproject.toml anywhere in tmpdir
+            sub = Path(tmpdir) / "empty"
+            sub.mkdir()
+
+            with patch("daffy.config.Path.cwd", return_value=sub):
+                result = find_config_file()
+                assert result is None
+
+    def test_load_config_from_parent_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            sub = Path(root) / "nested"
+            sub.mkdir()
+            (Path(root) / "pyproject.toml").write_text("[tool.daffy]\nstrict = true\n")
+
+            with patch("daffy.config.Path.cwd", return_value=sub):
+                clear_config_cache()
+                config = load_config()
+                assert config["strict"] is True

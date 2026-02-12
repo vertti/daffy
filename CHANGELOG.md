@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- Config file discovery now walks up parent directories instead of only checking the current working directory
+
 ## 2.6.1
 
 ### Changed
