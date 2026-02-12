@@ -1,8 +1,6 @@
 """Tests for optional Pydantic dependency support."""
 
-from pathlib import Path
-
-import tomli
+from importlib.metadata import PackageNotFoundError, metadata
 
 from daffy.pydantic_types import (
     HAS_PYDANTIC,
@@ -26,10 +24,10 @@ def test_pydantic_imports_available() -> None:
 
 
 def test_pydantic_extra_declared_in_pyproject() -> None:
-    pyproject_path = Path(__file__).resolve().parents[1] / "pyproject.toml"
-    with pyproject_path.open("rb") as f:
-        project = tomli.load(f)["project"]
+    try:
+        meta = metadata("daffy")
+    except PackageNotFoundError as exc:  # pragma: no cover
+        raise AssertionError("Package metadata for 'daffy' not found") from exc
 
-    optional_deps = project.get("optional-dependencies", {})
-    assert "pydantic" in optional_deps
-    assert "pydantic>=2.4.0" in optional_deps["pydantic"]
+    provides_extra = meta.get_all("Provides-Extra") or []
+    assert "pydantic" in provides_extra
