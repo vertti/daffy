@@ -21,18 +21,18 @@ Validates DataFrame parameters passed to a function.
 
 **Parameters:**
 
-| Parameter          | Type                        | Description                                                                                   |
-| ------------------ | --------------------------- | --------------------------------------------------------------------------------------------- |
-| `name`             | `str` or `None`             | Name of the parameter to validate. If not specified, validates the first DataFrame parameter. |
-| `columns`          | `list` or `dict` or `None`  | Column specification. See [Column Specifications](#column-specifications).                    |
-| `strict`           | `bool` or `None`            | If `True`, raises error for unexpected columns. Defaults to project config or `False`.        |
+| Parameter          | Type                        | Description                                                                                      |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `name`             | `str` or `None`             | Name of the parameter to validate. If not specified, validates the first DataFrame parameter.    |
+| `columns`          | `list` or `dict` or `None`  | Column specification. See [Column Specifications](#column-specifications).                       |
+| `strict`           | `bool` or `None`            | If `True`, raises error for unexpected columns. Defaults to project config or `False`.           |
 | `lazy`             | `bool` or `None`            | If `True`, collects all validation errors before raising. Defaults to project config or `False`. |
-| `composite_unique` | `list[list[str]]` or `None` | Column combinations that must be unique (for example `[['first_name', 'last_name']]`).       |
-| `row_validator`    | `type[BaseModel]` or `None` | Pydantic model for row-level validation.                                                      |
-| `min_rows`         | `int` or `None`             | Minimum number of rows required.                                                              |
-| `max_rows`         | `int` or `None`             | Maximum number of rows allowed.                                                               |
-| `exact_rows`       | `int` or `None`             | Exact number of rows required.                                                                |
-| `allow_empty`      | `bool` or `None`            | Whether empty DataFrames are allowed. Defaults to project config or `True`.                  |
+| `composite_unique` | `list[list[str]]` or `None` | Column combinations that must be unique (for example `[['first_name', 'last_name']]`).           |
+| `row_validator`    | `type[BaseModel]` or `None` | Pydantic model for row-level validation.                                                         |
+| `min_rows`         | `int` or `None`             | Minimum number of rows required.                                                                 |
+| `max_rows`         | `int` or `None`             | Maximum number of rows allowed.                                                                  |
+| `exact_rows`       | `int` or `None`             | Exact number of rows required.                                                                   |
+| `allow_empty`      | `bool` or `None`            | Whether empty DataFrames are allowed. Defaults to project config or `True`.                      |
 
 **Examples:**
 
@@ -79,17 +79,17 @@ Validates the DataFrame returned by a function.
 
 **Parameters:**
 
-| Parameter          | Type                        | Description                                                                            |
-| ------------------ | --------------------------- | -------------------------------------------------------------------------------------- |
-| `columns`          | `list` or `dict` or `None`  | Column specification. See [Column Specifications](#column-specifications).             |
-| `strict`           | `bool` or `None`            | If `True`, raises error for unexpected columns. Defaults to project config or `False`. |
+| Parameter          | Type                        | Description                                                                                      |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `columns`          | `list` or `dict` or `None`  | Column specification. See [Column Specifications](#column-specifications).                       |
+| `strict`           | `bool` or `None`            | If `True`, raises error for unexpected columns. Defaults to project config or `False`.           |
 | `lazy`             | `bool` or `None`            | If `True`, collects all validation errors before raising. Defaults to project config or `False`. |
-| `composite_unique` | `list[list[str]]` or `None` | Column combinations that must be unique (for example `[['country', 'city']]`).        |
-| `row_validator`    | `type[BaseModel]` or `None` | Pydantic model for row-level validation.                                               |
-| `min_rows`         | `int` or `None`             | Minimum number of rows required.                                                       |
-| `max_rows`         | `int` or `None`             | Maximum number of rows allowed.                                                        |
-| `exact_rows`       | `int` or `None`             | Exact number of rows required.                                                         |
-| `allow_empty`      | `bool` or `None`            | Whether empty DataFrames are allowed. Defaults to project config or `True`.           |
+| `composite_unique` | `list[list[str]]` or `None` | Column combinations that must be unique (for example `[['country', 'city']]`).                   |
+| `row_validator`    | `type[BaseModel]` or `None` | Pydantic model for row-level validation.                                                         |
+| `min_rows`         | `int` or `None`             | Minimum number of rows required.                                                                 |
+| `max_rows`         | `int` or `None`             | Maximum number of rows allowed.                                                                  |
+| `exact_rows`       | `int` or `None`             | Exact number of rows required.                                                                   |
+| `allow_empty`      | `bool` or `None`            | Whether empty DataFrames are allowed. Defaults to project config or `True`.                      |
 
 **Examples:**
 
@@ -120,7 +120,7 @@ Logs DataFrame structure when entering and exiting a function.
 
 | Parameter        | Type   | Description                                                        |
 | ---------------- | ------ | ------------------------------------------------------------------ |
-| `level`          | `int`  | Logging level for emitted messages. Default: `logging.DEBUG`.     |
+| `level`          | `int`  | Logging level for emitted messages. Default: `logging.DEBUG`.      |
 | `include_dtypes` | `bool` | If `True`, includes column dtypes in log output. Default: `False`. |
 
 **Examples:**
@@ -195,23 +195,23 @@ columns={"r/score_\\d+/": {"dtype": "float64", "checks": {"between": (0, 100)}}}
 
 Available built-in checks for the `checks` parameter:
 
-| Check              | Argument   | Description                |
-| ------------------ | ---------- | -------------------------- |
-| `gt`               | `number`   | Greater than               |
-| `ge`               | `number`   | Greater than or equal      |
-| `lt`               | `number`   | Less than                  |
-| `le`               | `number`   | Less than or equal         |
-| `eq`               | `value`    | Equal to                   |
-| `ne`               | `value`    | Not equal to               |
-| `between`          | `(lo, hi)` | Value in range (inclusive) |
-| `isin`             | `list`     | Value in set               |
-| `notin`            | `list`     | Value not in set           |
-| `notnull`          | `True`     | No null values             |
-| `str_regex`        | `pattern`  | String matches regex       |
-| `str_startswith`   | `str`      | String starts with prefix  |
-| `str_endswith`     | `str`      | String ends with suffix    |
-| `str_contains`     | `str`      | String contains substring  |
-| `str_length`       | `(lo, hi)` | String length in range     |
+| Check            | Argument   | Description                |
+| ---------------- | ---------- | -------------------------- |
+| `gt`             | `number`   | Greater than               |
+| `ge`             | `number`   | Greater than or equal      |
+| `lt`             | `number`   | Less than                  |
+| `le`             | `number`   | Less than or equal         |
+| `eq`             | `value`    | Equal to                   |
+| `ne`             | `value`    | Not equal to               |
+| `between`        | `(lo, hi)` | Value in range (inclusive) |
+| `isin`           | `list`     | Value in set               |
+| `notin`          | `list`     | Value not in set           |
+| `notnull`        | `True`     | No null values             |
+| `str_regex`      | `pattern`  | String matches regex       |
+| `str_startswith` | `str`      | String starts with prefix  |
+| `str_endswith`   | `str`      | String ends with suffix    |
+| `str_contains`   | `str`      | String contains substring  |
+| `str_length`     | `(lo, hi)` | String length in range     |
 
 Custom checks are also supported by passing a callable as the check value.
 
