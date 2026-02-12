@@ -9,10 +9,12 @@ All notable changes to this project will be documented in this file.
 - Optional dependency detection now recognizes all advertised backends (Pandas, Polars, Modin, PyArrow)
 - Early import failure now triggers only when none of the supported DataFrame libraries are installed
 - Updated optional dependency tests and isolation docs/scripts to align with the expanded backend detection contract
+- Synced API docs and README examples with current `df_in`/`df_out`/`df_log` signatures and built-in check names
 
 ### Added
 
 - Declared `pydantic` optional dependency extra so `pip install 'daffy[pydantic]'` matches runtime install guidance
+- Added docs contract tests to detect signature/example drift in `README.md` and `docs/api.md`
 
 ## 2.6.0
 
