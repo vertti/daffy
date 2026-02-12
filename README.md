@@ -103,14 +103,17 @@ def process_orders(df):
 ```
 
 Available checks: `gt`, `ge`, `lt`, `le`, `between`, `eq`, `ne`, `isin`, `notnull`, `str_regex`
+Also supported: `notin`, `str_startswith`, `str_endswith`, `str_contains`, `str_length`
 
 ### Nullability and uniqueness
 
 ```python
 @df_in(
-    columns=["user_id", "email", "age"],
-    nullable={"email": False},  # email cannot be null
-    unique=["user_id"],         # user_id must be unique
+    columns={
+        "user_id": {"unique": True, "nullable": False},  # user_id must be unique and not null
+        "email": {"nullable": False},  # email cannot be null
+        "age": {"dtype": "int64"},
+    }
 )
 def clean_users(df):
     return df
