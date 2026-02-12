@@ -1,6 +1,6 @@
 # ROADMAP
 
-Last updated: 2026-02-09
+Last updated: 2026-02-12
 
 ## Goals
 
@@ -30,7 +30,7 @@ Last updated: 2026-02-09
 
 ### Milestone 0: Product Contract and Documentation Trust
 
-- [ ] PR-001: Backend Support Contract Alignment
+- [x] PR-001: Backend Support Contract Alignment (shipped in v2.6.1)
   - Value: Removes user confusion and support churn.
   - Scope:
     - Decide and codify support matrix in one source of truth (README + docs + error messages).
@@ -43,7 +43,7 @@ Last updated: 2026-02-09
   - Done when:
     - Public docs and runtime behavior no longer conflict.
 
-- [ ] PR-002: Pydantic Install Path and Packaging Clarity
+- [x] PR-002: Pydantic Install Path and Packaging Clarity (shipped in v2.6.1)
   - Value: Prevents failed install guidance.
   - Scope:
     - Either add proper optional dependency extras for Pydantic or update all install hints to the actual supported install path.
@@ -55,7 +55,7 @@ Last updated: 2026-02-09
   - Done when:
     - Error hints are executable as written.
 
-- [ ] PR-003: API Docs Signature and Examples Sync
+- [x] PR-003: API Docs Signature and Examples Sync (shipped in v2.6.1)
   - Value: Reduces misuse and issue volume.
   - Scope:
     - Update `docs/api.md`, `README.md`, and advanced docs to match real decorator signatures and supported check names.
