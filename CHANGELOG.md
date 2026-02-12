@@ -10,6 +10,10 @@ All notable changes to this project will be documented in this file.
 - Early import failure now triggers only when none of the supported DataFrame libraries are installed
 - Updated optional dependency tests and isolation docs/scripts to align with the expanded backend detection contract
 
+### Added
+
+- Declared `pydantic` optional dependency extra so `pip install 'daffy[pydantic]'` matches runtime install guidance
+
 ## 2.6.0
 
 ### Added

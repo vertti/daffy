@@ -118,7 +118,11 @@ def clean_users(df):
 
 ### Row validation with Pydantic
 
-For complex, cross-field validation (requires `pydantic>=2.4.0`):
+For complex, cross-field validation:
+
+```bash
+pip install 'daffy[pydantic]'
+```
 
 ```python
 from pydantic import BaseModel, Field

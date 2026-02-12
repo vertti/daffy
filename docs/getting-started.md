@@ -13,7 +13,7 @@ Daffy works with pandas, Polars, Modin, or PyArrow — whatever you already have
 For row validation with Pydantic:
 
 ```bash
-pip install 'pydantic>=2.4.0'
+pip install 'daffy[pydantic]'
 ```
 
 ## Your First Decorator
