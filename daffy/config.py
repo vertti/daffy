@@ -64,11 +64,11 @@ _DEFAULTS: dict[str, Any] = {
 }
 
 
-def load_config() -> dict[str, Any]:
+def load_config(cwd: Path | None = None) -> dict[str, Any]:
     """Load daffy configuration from pyproject.toml."""
     config = dict(_DEFAULTS)
 
-    config_path = find_config_file()
+    config_path = find_config_file(cwd)
     if not config_path:
         return config
 
@@ -89,24 +89,34 @@ def load_config() -> dict[str, Any]:
     return config
 
 
-def find_config_file() -> str | None:
-    """Find pyproject.toml in the current working directory."""
-    path = Path.cwd() / "pyproject.toml"
-    return str(path) if path.is_file() else None
+def find_config_file(cwd: Path | None = None) -> str | None:
+    """Find pyproject.toml in the current working directory or any parent directory."""
+    current_dir = cwd.resolve() if cwd is not None else Path.cwd().resolve()
+    for parent in [current_dir, *current_dir.parents]:
+        path = parent / "pyproject.toml"
+        if path.is_file():
+            return str(path)
+    return None
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=128)
+def _get_config_for_cwd(cwd: str) -> MappingProxyType[str, Any]:
+    """Load and cache configuration for a specific current working directory."""
+    return MappingProxyType(load_config(Path(cwd)))
+
+
 def get_config() -> MappingProxyType[str, Any]:
-    """Get the daffy configuration, cached after first load.
+    """Get the daffy configuration, cached by current working directory.
 
     Returns an immutable view of the configuration to prevent accidental modification.
     """
-    return MappingProxyType(load_config())
+    cwd = str(Path.cwd().resolve())
+    return _get_config_for_cwd(cwd)
 
 
 def clear_config_cache() -> None:
     """Clear the configuration cache. Primarily for testing."""
-    get_config.cache_clear()
+    _get_config_for_cwd.cache_clear()
 
 
 def _get_bool_config(param: bool | None, key: str) -> bool:
