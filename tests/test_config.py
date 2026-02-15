@@ -79,6 +79,40 @@ def test_find_config_file_returns_none_when_no_pyproject_exists() -> None:
         assert result is None
 
 
+def test_find_config_file_searches_parent_directories() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_dir = Path(tmpdir) / "project"
+        nested_dir = project_dir / "src" / "module"
+        nested_dir.mkdir(parents=True)
+        pyproject_path = project_dir / "pyproject.toml"
+        pyproject_path.write_text("[tool.daffy]\nstrict = true\n", encoding="utf-8")
+
+        with patch("daffy.config.Path.cwd", return_value=nested_dir):
+            from daffy.config import find_config_file
+
+            result = find_config_file()
+            assert result == str(pyproject_path.resolve())
+
+
+def test_find_config_file_prefers_nearest_parent() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_dir = Path(tmpdir) / "project"
+        package_dir = project_dir / "pkg"
+        nested_dir = package_dir / "tests"
+        nested_dir.mkdir(parents=True)
+
+        root_pyproject = project_dir / "pyproject.toml"
+        package_pyproject = package_dir / "pyproject.toml"
+        root_pyproject.write_text("[tool.daffy]\nstrict = false\n", encoding="utf-8")
+        package_pyproject.write_text("[tool.daffy]\nstrict = true\n", encoding="utf-8")
+
+        with patch("daffy.config.Path.cwd", return_value=nested_dir):
+            from daffy.config import find_config_file
+
+            result = find_config_file()
+            assert result == str(package_pyproject.resolve())
+
+
 def test_load_config_without_strict_setting() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
@@ -258,3 +292,43 @@ row_validation_max_errors = 0
                 load_config()
             assert "row_validation_max_errors" in str(exc_info.value)
             assert ">= 1" in str(exc_info.value)
+
+
+def test_get_config_cache_isolated_by_cwd() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        project_dir = Path(tmpdir) / "project"
+        nested_dir = project_dir / "src"
+        external_dir = Path(tmpdir) / "external"
+        nested_dir.mkdir(parents=True)
+        external_dir.mkdir(parents=True)
+
+        (project_dir / "pyproject.toml").write_text("[tool.daffy]\nstrict = true\n", encoding="utf-8")
+
+        clear_config_cache()
+        with patch("daffy.config.Path.cwd", return_value=nested_dir):
+            nested_config = get_config()
+            assert nested_config["strict"] is True
+
+        with patch("daffy.config.Path.cwd", return_value=external_dir):
+            external_config = get_config()
+            assert external_config["strict"] is False
+
+
+def test_get_config_uses_cache_for_same_cwd() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pyproject_path = Path(tmpdir) / "pyproject.toml"
+        pyproject_path.write_text("[tool.daffy]\nstrict = true\n", encoding="utf-8")
+
+        from daffy.config import load_config
+
+        clear_config_cache()
+        with (
+            patch("daffy.config.Path.cwd", return_value=Path(tmpdir)),
+            patch("daffy.config.load_config", wraps=load_config) as mocked_load_config,
+        ):
+            first = get_config()
+            second = get_config()
+
+            assert first["strict"] is True
+            assert second["strict"] is True
+            assert mocked_load_config.call_count == 1

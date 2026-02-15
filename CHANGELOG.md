@@ -10,6 +10,8 @@ All notable changes to this project will be documented in this file.
 - Early import failure now triggers only when none of the supported DataFrame libraries are installed
 - Updated optional dependency tests and isolation docs/scripts to align with the expanded backend detection contract
 - Synced API docs and README examples with current `df_in`/`df_out`/`df_log` signatures and built-in check names
+- Config discovery now searches `pyproject.toml` from the current directory up through parent directories
+- Configuration caching is now keyed by current working directory for deterministic behavior across cwd changes
 
 ### Added
 
