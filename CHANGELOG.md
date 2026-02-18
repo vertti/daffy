@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Synced API docs and README examples with current `df_in`/`df_out`/`df_log` signatures and built-in check names
 - Config discovery now searches `pyproject.toml` from the current directory up through parent directories
 - Configuration caching is now keyed by current working directory for deterministic behavior across cwd changes
+- Unnamed `df_in` now selects the first DataFrame-like argument instead of always taking the first positional argument
 
 ### Added
 

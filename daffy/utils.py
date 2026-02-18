@@ -48,7 +48,11 @@ def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any,
 
     """
     if not name:
-        # Return first arg/kwarg or None - let downstream code handle validation
+        first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
+        if first_dataframe_arg is not None:
+            return first_dataframe_arg[0]
+
+        # Keep existing fallback behavior when no DataFrame-like argument is present.
         return args[0] if args else next(iter(kwargs.values()), None)
 
     if name in kwargs:
@@ -74,11 +78,43 @@ def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args:
     if name:
         return name
 
+    first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
+    if first_dataframe_arg is not None:
+        return first_dataframe_arg[1]
+
     if args:
         func_params_in_order = list(inspect.signature(func).parameters.keys())
         return func_params_in_order[0]
 
     return next(iter(kwargs.keys()), None)
+
+
+def _find_first_dataframe_argument(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, str] | None:
+    """Find the first DataFrame-like argument using function signature order."""
+    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+
+    for param_name, param in inspect.signature(func).parameters.items():
+        if param_name not in bound_args.arguments:
+            continue
+
+        value = bound_args.arguments[param_name]
+
+        if param.kind is inspect.Parameter.VAR_POSITIONAL:
+            for item in value:
+                if is_supported_dataframe(item):
+                    return item, param_name
+            continue
+
+        if param.kind is inspect.Parameter.VAR_KEYWORD:
+            for kwarg_name, kwarg_value in value.items():
+                if is_supported_dataframe(kwarg_value):
+                    return kwarg_value, kwarg_name
+            continue
+
+        if is_supported_dataframe(value):
+            return value, param_name
+
+    return None
 
 
 def describe_dataframe(df: Any, include_dtypes: bool = False) -> str:
