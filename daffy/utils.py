@@ -36,7 +36,9 @@ def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any,
 
     Args:
         func: The function whose parameters to inspect
-        name: Name of the parameter to extract. If None, returns first positional arg or kwarg.
+        name: Name of the parameter to extract. If None, the function first attempts to
+            find and return a DataFrame-like argument; if no DataFrame-like argument is
+            found, it falls back to returning the first positional arg or kwarg.
         *args: Positional arguments passed to the function
         **kwargs: Keyword arguments passed to the function
 
@@ -75,6 +77,24 @@ def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any,
 
 
 def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> str | None:
+    """Resolve the effective parameter name used for validation.
+
+    Resolution order:
+    1. Return the explicit ``name`` argument when provided.
+    2. Find the first DataFrame-like argument via ``_find_first_dataframe_argument``.
+    3. Fall back to the first positional parameter name if positional args were provided.
+    4. Fall back to the first keyword argument name.
+
+    Args:
+        func: The function whose parameters to inspect.
+        name: Explicit parameter name to use, or ``None`` for automatic resolution.
+        *args: Positional arguments passed to the function.
+        **kwargs: Keyword arguments passed to the function.
+
+    Returns:
+        The resolved parameter name, or ``None`` when no name can be determined.
+
+    """
     if name:
         return name
 
@@ -91,9 +111,10 @@ def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args:
 
 def _find_first_dataframe_argument(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, str] | None:
     """Find the first DataFrame-like argument using function signature order."""
-    bound_args = inspect.signature(func).bind_partial(*args, **kwargs)
+    sig = inspect.signature(func)
+    bound_args = sig.bind_partial(*args, **kwargs)
 
-    for param_name, param in inspect.signature(func).parameters.items():
+    for param_name, param in sig.parameters.items():
         if param_name not in bound_args.arguments:
             continue
 

@@ -69,7 +69,7 @@ def test_df_in_unnamed_selects_first_dataframe_like_parameter(df: IntoDataFrame)
         return table
 
     result = test_fn("context", df, 3)
-    assert result is not None
+    assert result is df
 
 
 @pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
@@ -79,7 +79,7 @@ def test_df_in_unnamed_selects_dataframe_like_parameter_with_kwargs(df: IntoData
         return table
 
     result = test_fn(metadata="context", table=df)
-    assert result is not None
+    assert result is df
 
 
 @pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
