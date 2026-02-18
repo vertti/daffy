@@ -63,6 +63,26 @@ def test_dfin_with_no_inputs() -> None:
 
 
 @pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_df_in_unnamed_selects_first_dataframe_like_parameter(df: IntoDataFrame) -> None:
+    @df_in(columns=["Brand", "Price"])
+    def test_fn(metadata: str, table: IntoDataFrame, retries: int) -> IntoDataFrame:
+        return table
+
+    result = test_fn("context", df, 3)
+    assert result is df
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_df_in_unnamed_selects_dataframe_like_parameter_with_kwargs(df: IntoDataFrame) -> None:
+    @df_in(columns=["Brand", "Price"])
+    def test_fn(metadata: str, table: IntoDataFrame) -> IntoDataFrame:
+        return table
+
+    result = test_fn(metadata="context", table=df)
+    assert result is df
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
 def test_correct_named_input_with_columns(df: IntoDataFrame) -> None:
     @df_in(name="_df", columns=["Brand", "Price"])
     def test_fn(my_input: Any, _df: IntoDataFrame) -> IntoDataFrame:
