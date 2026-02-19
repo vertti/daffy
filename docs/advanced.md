@@ -9,7 +9,7 @@ You can use regex patterns to match column names that follow a specific pattern.
 Define a regex pattern by using the format `"r/pattern/"`:
 
 ```python
-@df_in(columns=["Brand", "r/Price_\d+/"])
+@df_in(["Brand", "r/Price_\d+/"])
 def process_data(df):
     # This will accept DataFrames with columns like "Brand", "Price_1", "Price_2", etc.
     ...
@@ -33,7 +33,7 @@ Regex patterns are also considered in strict mode. Any column matching a regex p
 You can use regex patterns in dictionaries that specify data types as well:
 
 ```python
-@df_in(columns={"Brand": "object", "r/Price_\d+/": "int64"})
+@df_in({"Brand": "object", "r/Price_\d+/": "int64"})
 def process_data(df):
     # This will check that all columns matching "Price_\d+" have int64 dtype
     ...
@@ -55,7 +55,7 @@ AssertionError: Column Price_2 in function 'process_data' parameter 'df' has wro
 You can validate that columns contain no null values using the rich column spec format:
 
 ```python
-@df_in(columns={"price": {"nullable": False}})
+@df_in({"price": {"nullable": False}})
 def process_prices(df):
     # price column must not contain any null/NaN values
     ...
@@ -66,7 +66,7 @@ def process_prices(df):
 Nullable validation can be combined with dtype validation:
 
 ```python
-@df_in(columns={"price": {"dtype": "float64", "nullable": False}})
+@df_in({"price": {"dtype": "float64", "nullable": False}})
 def process_prices(df):
     # price must be float64 AND contain no nulls
     ...
@@ -77,7 +77,7 @@ def process_prices(df):
 Nullable validation works with regex patterns, applying to all matched columns:
 
 ```python
-@df_in(columns={"r/Price_\\d+/": {"nullable": False}})
+@df_in({"r/Price_\\d+/": {"nullable": False}})
 def process_data(df):
     # All columns matching Price_1, Price_2, etc. must not contain nulls
     ...
@@ -98,7 +98,7 @@ AssertionError: Column 'price' in function 'process_prices' parameter 'df' conta
 You can validate that columns contain only unique values using the rich column spec format:
 
 ```python
-@df_in(columns={"user_id": {"unique": True}})
+@df_in({"user_id": {"unique": True}})
 def process_users(df):
     # user_id column must not contain any duplicate values
     ...
@@ -109,7 +109,7 @@ def process_users(df):
 Uniqueness validation can be combined with dtype and nullable validation:
 
 ```python
-@df_in(columns={"user_id": {"dtype": "int64", "unique": True, "nullable": False}})
+@df_in({"user_id": {"dtype": "int64", "unique": True, "nullable": False}})
 def process_users(df):
     # user_id must be int64, contain no nulls, AND have no duplicates
     ...
@@ -120,7 +120,7 @@ def process_users(df):
 Uniqueness validation works with regex patterns, applying to all matched columns:
 
 ```python
-@df_in(columns={"r/ID_\\d+/": {"unique": True}})
+@df_in({"r/ID_\\d+/": {"unique": True}})
 def process_data(df):
     # All columns matching ID_1, ID_2, etc. must have unique values
     ...
@@ -235,7 +235,7 @@ AssertionError: DataFrame in function 'process_data' parameter 'df' has 8 rows b
 By default, all specified columns are required. You can mark columns as optional using `required=False`:
 
 ```python
-@df_in(columns={
+@df_in({
     "user_id": {"dtype": "int64"},
     "nickname": {"dtype": "object", "required": False}
 })
@@ -250,7 +250,7 @@ def process_users(df):
 - If an optional column is present, all other validations (dtype, nullable, unique) still apply
 
 ```python
-@df_in(columns={
+@df_in({
     "discount": {"dtype": "float64", "nullable": False, "required": False}
 })
 def process_orders(df):
@@ -263,7 +263,7 @@ def process_orders(df):
 Optional columns work with regex patterns:
 
 ```python
-@df_in(columns={
+@df_in({
     "id": {"dtype": "int64"},
     "r/extra_\\d+/": {"dtype": "object", "required": False}
 })
@@ -281,7 +281,7 @@ By default, `required=True`, meaning all columns must exist. This preserves back
 You can validate column values using vectorized checks. This is faster than row-by-row validation because it uses vectorized DataFrame operations:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"checks": {"gt": 0}},
     "score": {"checks": {"between": (0, 100)}},
     "status": {"checks": {"isin": ["active", "pending", "closed"]}},
@@ -315,7 +315,7 @@ def process_data(df):
 You can combine multiple checks on a single column:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"checks": {"gt": 0, "lt": 10000}},
     "age": {"checks": {"ge": 0, "le": 120}},
 })
@@ -328,7 +328,7 @@ def process_data(df):
 Checks work alongside other column validations:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {
         "dtype": "float64",
         "nullable": False,
@@ -344,7 +344,7 @@ def process_data(df):
 Checks apply to all columns matching a regex pattern:
 
 ```python
-@df_in(columns={
+@df_in({
     "r/score_\\d+/": {"checks": {"between": (0, 100)}}
 })
 def process_data(df):
@@ -357,7 +357,7 @@ def process_data(df):
 If a column is optional and missing, checks are skipped:
 
 ```python
-@df_in(columns={
+@df_in({
     "discount": {"required": False, "checks": {"ge": 0, "le": 1}}
 })
 def process_data(df):
@@ -370,7 +370,7 @@ def process_data(df):
 For validation logic not covered by built-in checks, you can use custom functions. The function receives a [Narwhals Series](https://narwhals-dev.github.io/narwhals/) and should return a boolean Series where `True` means valid:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"checks": {
         "gt": 0,  # built-in check
         "no_outliers": lambda s: s < s.mean() * 10  # custom check
@@ -389,7 +389,7 @@ AssertionError: Column 'price' failed check 'no_outliers': 3 values failed. Exam
 Custom checks can use any Narwhals Series operations:
 
 ```python
-@df_in(columns={
+@df_in({
     "email": {"checks": {
         "has_at": lambda s: s.str.contains("@"),
         "reasonable_length": lambda s: (s.str.len_chars() >= 5) & (s.str.len_chars() <= 254)
@@ -467,7 +467,7 @@ AssertionError: Row validation failed for 2 out of 100 rows:
 You can validate both columns and row data:
 
 ```python
-@df_in(columns=["name", "price", "stock"], row_validator=Product)
+@df_in(["name", "price", "stock"], row_validator=Product)
 def process_inventory(df):
     return df
 ```
@@ -529,7 +529,7 @@ def process_employees(df):
 By default, validation stops at the first error type. With `lazy=True`, all errors are collected and reported together:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"dtype": "float64", "nullable": False},
     "quantity": {"dtype": "int64", "checks": {"gt": 0}},
     "category": "object"

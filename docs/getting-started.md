@@ -23,7 +23,7 @@ Import the decorators and add them to your functions:
 ```python
 from daffy import df_in, df_out
 
-@df_in(columns=["name", "price", "quantity"])
+@df_in(["name", "price", "quantity"])
 def process_orders(orders_df):
     # If orders_df is missing any of these columns,
     # Daffy raises an AssertionError immediately
@@ -37,8 +37,8 @@ That's it! When `process_orders` is called, Daffy checks that the DataFrame has 
 Validate both what goes in and what comes out:
 
 ```python
-@df_in(columns=["name", "price"])
-@df_out(columns=["name", "price", "total"])
+@df_in(["name", "price"])
+@df_out(["name", "price", "total"])
 def calculate_totals(df):
     df = df.copy()
     df["total"] = df["price"] * 1.1  # Add 10% tax
@@ -52,7 +52,7 @@ If the returned DataFrame doesn't have the expected columns, you'll know immedia
 Check data types alongside column names:
 
 ```python
-@df_in(columns={
+@df_in({
     "name": "object",
     "price": "float64",
     "quantity": "int64"
@@ -68,7 +68,7 @@ If `price` is accidentally an `int64` instead of `float64`, Daffy catches it.
 Validate column values without row iteration:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"dtype": "float64", "checks": {"gt": 0}},
     "quantity": {"dtype": "int64", "checks": {"ge": 0}},
     "status": {"checks": {"isin": ["pending", "shipped", "delivered"]}}

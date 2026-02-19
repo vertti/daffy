@@ -10,12 +10,38 @@ Start by importing the needed decorators:
 from daffy import df_in, df_out
 ```
 
+## Calling Styles
+
+Both `@df_in` and `@df_out` accept columns as the first positional argument. These two forms are equivalent:
+
+```python
+# Shorthand — columns as first positional argument
+@df_in(["Brand", "Price"])
+@df_in({"Brand": "object", "Price": "int64"})
+
+# Explicit keyword
+@df_in(columns=["Brand", "Price"])
+@df_in(columns={"Brand": "object", "Price": "int64"})
+```
+
+Use whichever style you prefer. The shorthand is more concise; the keyword form reads well when combined with other parameters:
+
+```python
+@df_in(columns=["Brand", "Price"], strict=True)
+```
+
+When validating a specific named parameter, pass `name` as a keyword:
+
+```python
+@df_in(name="car_df", columns=["Brand", "Price"])
+```
+
 ## Input Validation
 
 To check a DataFrame input to a function, annotate the function with `@df_in`. For example the following function expects to get a DataFrame with columns `Brand` and `Price`:
 
 ```python
-@df_in(columns=["Brand", "Price"])
+@df_in(["Brand", "Price"])
 def process_cars(car_df):
     # do stuff with cars
 ```
@@ -42,7 +68,7 @@ def process_cars(car_df, brand_df):
 To check that a function returns a DataFrame with specific columns, use `@df_out` decorator:
 
 ```python
-@df_out(columns=["Brand", "Price"])
+@df_out(["Brand", "Price"])
 def get_all_cars():
     # get those cars
     return all_cars_df
@@ -61,8 +87,8 @@ The error message clearly indicates that this is a **return value** validation f
 To check both input and output, just use both annotations on the same function:
 
 ```python
-@df_in(columns=["Brand", "Price"])
-@df_out(columns=["Brand", "Price"])
+@df_in(["Brand", "Price"])
+@df_out(["Brand", "Price"])
 def filter_cars(car_df):
     # filter some cars
     return filtered_cars_df
@@ -98,7 +124,7 @@ AssertionError("Column Price in function 'process_cars' parameter 'car_df' has w
 You can enable strict-mode for both `@df_in` and `@df_out`. This will raise an error if the DataFrame contains columns not defined in the annotation:
 
 ```python
-@df_in(columns=["Brand"], strict=True)
+@df_in(["Brand"], strict=True)
 def process_cars(car_df):
     # do stuff with cars
 ```
