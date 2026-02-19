@@ -19,6 +19,7 @@ All notable changes to this project will be documented in this file.
 - Config discovery now searches `pyproject.toml` from the current directory up through parent directories
 - Configuration caching is now keyed by current working directory for deterministic behavior across cwd changes
 - Unnamed `df_in` now selects the first DataFrame-like argument instead of always taking the first positional argument
+- Added opt-in strict column spec validation via `[tool.daffy] strict_specs = true` for invalid column keys/types
 
 ### Added
 

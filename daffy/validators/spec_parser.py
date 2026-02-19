@@ -59,19 +59,30 @@ def _parse_dict_constraints(col_name: str, constraints: dict[str, Any], result: 
         result.checks_by_column[col_name] = constraints["checks"]
 
 
-def _parse_list_spec(columns: Sequence[Any], result: ParsedColumnSpec) -> None:
+def _parse_list_spec(columns: Sequence[Any], result: ParsedColumnSpec, strict_specs: bool) -> None:
     """Parse a list column specification."""
-    for c in columns:
+    for index, c in enumerate(columns):
         col_name = _get_col_name(c)
-        if col_name is not None:
-            result.required_columns.append(col_name)
+        if col_name is None:
+            if strict_specs:
+                raise TypeError(
+                    "Invalid column spec at index "
+                    f"{index}: expected str or regex column pattern, got {type(c).__name__}"
+                )
+            continue
+        result.required_columns.append(col_name)
 
 
-def _parse_dict_spec(columns: dict[Any, Any], result: ParsedColumnSpec) -> None:
+def _parse_dict_spec(columns: dict[Any, Any], result: ParsedColumnSpec, strict_specs: bool) -> None:
     """Parse a dict column specification."""
-    for col_spec, value in columns.items():
+    for index, (col_spec, value) in enumerate(columns.items()):
         col_name = _get_col_name(col_spec)
         if col_name is None:
+            if strict_specs:
+                raise TypeError(
+                    "Invalid column key at index "
+                    f"{index}: expected str or regex column pattern, got {type(col_spec).__name__}"
+                )
             continue  # Skip invalid column types
 
         if isinstance(value, dict):
@@ -81,7 +92,7 @@ def _parse_dict_spec(columns: dict[Any, Any], result: ParsedColumnSpec) -> None:
             result.dtype_constraints[col_name] = value
 
 
-def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None) -> ParsedColumnSpec:
+def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None, strict_specs: bool = False) -> ParsedColumnSpec:
     """Parse user-provided column specification into validator-ready format.
 
     Handles:
@@ -90,7 +101,8 @@ def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None) -> ParsedC
     - Dict with dtype: {"col1": "int64"} → required + dtype check
     - Dict with constraints: {"col1": {"dtype": ..., "nullable": False, "required": False, ...}}
 
-    Invalid column types (like integers) are silently ignored for backwards compatibility.
+    Invalid column types (like integers) are silently ignored for backwards compatibility
+    unless strict_specs=True.
     """
     result = ParsedColumnSpec()
 
@@ -98,11 +110,11 @@ def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None) -> ParsedC
         return result
 
     if isinstance(columns, dict):
-        _parse_dict_spec(columns, result)
+        _parse_dict_spec(columns, result, strict_specs)
     elif isinstance(columns, str):
         # Treat a single string as a single column name, not a character sequence
-        _parse_list_spec([columns], result)
+        _parse_list_spec([columns], result, strict_specs)
     else:
-        _parse_list_spec(columns, result)
+        _parse_list_spec(columns, result, strict_specs)
 
     return result

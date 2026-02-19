@@ -12,6 +12,7 @@ import tomli
 # Configuration keys
 _KEY_STRICT = "strict"
 _KEY_LAZY = "lazy"
+_KEY_STRICT_SPECS = "strict_specs"
 _KEY_ROW_VALIDATION_MAX_ERRORS = "row_validation_max_errors"
 _KEY_CHECKS_MAX_SAMPLES = "checks_max_samples"
 _KEY_ALLOW_EMPTY = "allow_empty"
@@ -19,6 +20,7 @@ _KEY_ALLOW_EMPTY = "allow_empty"
 # Default values
 _DEFAULT_STRICT = False
 _DEFAULT_LAZY = False
+_DEFAULT_STRICT_SPECS = False
 _DEFAULT_MAX_ERRORS = 5
 _DEFAULT_CHECKS_MAX_SAMPLES = 5
 _DEFAULT_ALLOW_EMPTY = True
@@ -52,12 +54,13 @@ def _validate_int_config(daffy_config: dict[str, Any], key: str, min_value: int 
     return value
 
 
-_BOOL_KEYS = [_KEY_STRICT, _KEY_LAZY, _KEY_ALLOW_EMPTY]
+_BOOL_KEYS = [_KEY_STRICT, _KEY_LAZY, _KEY_STRICT_SPECS, _KEY_ALLOW_EMPTY]
 _INT_KEYS = [_KEY_ROW_VALIDATION_MAX_ERRORS, _KEY_CHECKS_MAX_SAMPLES]
 
 _DEFAULTS: dict[str, Any] = {
     _KEY_STRICT: _DEFAULT_STRICT,
     _KEY_LAZY: _DEFAULT_LAZY,
+    _KEY_STRICT_SPECS: _DEFAULT_STRICT_SPECS,
     _KEY_ROW_VALIDATION_MAX_ERRORS: _DEFAULT_MAX_ERRORS,
     _KEY_CHECKS_MAX_SAMPLES: _DEFAULT_CHECKS_MAX_SAMPLES,
     _KEY_ALLOW_EMPTY: _DEFAULT_ALLOW_EMPTY,
@@ -160,6 +163,21 @@ def get_lazy(lazy_param: bool | None = None) -> bool:
 
     """
     return _get_bool_config(lazy_param, _KEY_LAZY)
+
+
+def get_strict_specs(strict_specs_param: bool | None = None) -> bool:
+    """Get strict_specs setting, with explicit parameter taking precedence over configuration.
+
+    When strict_specs=True, invalid column spec keys/types raise errors instead of being ignored.
+
+    Args:
+        strict_specs_param: Explicitly provided strict_specs value, or None to use config
+
+    Returns:
+        bool: The effective strict_specs setting
+
+    """
+    return _get_bool_config(strict_specs_param, _KEY_STRICT_SPECS)
 
 
 def get_row_validation_max_errors() -> int:

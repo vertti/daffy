@@ -5,7 +5,9 @@ import tempfile
 from pathlib import Path
 from unittest.mock import patch
 
-from daffy.config import clear_config_cache, get_checks_max_samples, get_config, get_strict
+import pytest
+
+from daffy.config import clear_config_cache, get_checks_max_samples, get_config, get_strict, get_strict_specs
 
 
 def test_get_config_default() -> None:
@@ -33,6 +35,22 @@ def test_get_strict_override() -> None:
         assert get_strict(False) is False
 
 
+def test_get_strict_specs_default() -> None:
+    with patch("daffy.config.get_config", return_value={"strict_specs": False}):
+        assert get_strict_specs() is False
+
+    with patch("daffy.config.get_config", return_value={"strict_specs": True}):
+        assert get_strict_specs() is True
+
+
+def test_get_strict_specs_override() -> None:
+    with patch("daffy.config.get_config", return_value={"strict_specs": False}):
+        assert get_strict_specs(True) is True
+
+    with patch("daffy.config.get_config", return_value={"strict_specs": True}):
+        assert get_strict_specs(False) is False
+
+
 def test_config_from_pyproject() -> None:
     """Test loading configuration from pyproject.toml."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -51,6 +69,42 @@ strict = true
 
             config = load_config()
             assert config["strict"] is True
+
+
+def test_strict_specs_from_pyproject() -> None:
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+            f.write("""
+[tool.daffy]
+strict_specs = true
+            """)
+
+        with patch("daffy.config.Path.cwd", return_value=Path(tmpdir)):
+            from daffy.config import load_config
+
+            clear_config_cache()
+            config = load_config()
+            assert config["strict_specs"] is True
+
+
+def test_config_strict_specs_string_raises_error() -> None:
+    """Test that non-boolean strict_specs config raises TypeError."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+            f.write("""
+[tool.daffy]
+strict_specs = "true"
+            """)
+
+        with patch("daffy.config.Path.cwd", return_value=Path(tmpdir)):
+            from daffy.config import load_config
+
+            clear_config_cache()
+
+            with pytest.raises(TypeError) as exc_info:
+                load_config()
+            assert "strict_specs" in str(exc_info.value)
+            assert "boolean" in str(exc_info.value)
 
 
 def test_load_config_returns_default_when_file_not_found() -> None:

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from daffy.config import get_strict_specs
 from daffy.patterns import compile_regex_pattern, is_regex_string, match_column_with_regex
 
 if TYPE_CHECKING:
@@ -74,7 +75,7 @@ def build_validation_pipeline(  # noqa: C901
         )
 
     if columns:
-        spec = parse_column_spec(columns)
+        spec = parse_column_spec(columns, strict_specs=get_strict_specs())
 
         missing_required, resolved_required = _resolve_columns(spec.required_columns, df_columns)
         if missing_required:
