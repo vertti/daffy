@@ -481,3 +481,46 @@ def test_function_name_appears_in_dtype_mismatch_exception() -> None:
     assert "another_test_function" in str(excinfo.value)
     assert "Column Price" in str(excinfo.value)
     assert "wrong dtype" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_df_in_list_shorthand(df: IntoDataFrame) -> None:
+    @df_in(["Brand", "Price"])
+    def test_fn(my_input: Any) -> Any:
+        return my_input
+
+    test_fn(df)
+
+
+def test_df_in_dict_shorthand(basic_pandas_df: pd.DataFrame) -> None:
+    @df_in({"Brand": "object", "Price": "int64"})
+    def test_fn(my_input: Any) -> Any:
+        return my_input
+
+    test_fn(basic_pandas_df)
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_df_in_list_shorthand_missing_column(df: IntoDataFrame) -> None:
+    @df_in(["Brand", "NonExistent"])
+    def test_fn(my_input: Any) -> Any:
+        return my_input
+
+    with pytest.raises(AssertionError) as excinfo:
+        test_fn(df)
+
+    assert "Missing columns: ['NonExistent']" in str(excinfo.value)
+
+
+def test_df_in_shorthand_conflict_raises_type_error() -> None:
+    with pytest.raises(TypeError, match="Cannot pass columns as both"):
+        df_in(["a"], columns=["b"])  # type: ignore[no-matching-overload]
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_df_in_string_positional_still_works(df: IntoDataFrame) -> None:
+    @df_in("my_input", columns=["Brand", "Price"])
+    def test_fn(my_input: Any) -> Any:
+        return my_input
+
+    test_fn(df)

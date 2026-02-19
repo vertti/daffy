@@ -37,6 +37,10 @@ Validates DataFrame parameters passed to a function.
 **Examples:**
 
 ```python
+# Shorthand: columns as first positional argument
+@df_in(["a", "b", "c"])
+@df_in({"a": "int64", "b": "object"})
+
 # Simple column list
 @df_in(columns=["a", "b", "c"])
 
