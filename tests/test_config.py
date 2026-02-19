@@ -36,6 +36,7 @@ def test_get_strict_override() -> None:
 
 
 def test_get_strict_specs_default() -> None:
+    """Verify default strict_specs value is read from config."""
     with patch("daffy.config.get_config", return_value={"strict_specs": False}):
         assert get_strict_specs() is False
 
@@ -44,6 +45,7 @@ def test_get_strict_specs_default() -> None:
 
 
 def test_get_strict_specs_override() -> None:
+    """Verify strict_specs override argument takes precedence over config."""
     with patch("daffy.config.get_config", return_value={"strict_specs": False}):
         assert get_strict_specs(True) is True
 
@@ -72,6 +74,7 @@ strict = true
 
 
 def test_strict_specs_from_pyproject() -> None:
+    """Verify strict_specs value is read from pyproject config."""
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
             f.write("""
@@ -226,8 +229,6 @@ checks_max_samples = 10
 
 def test_config_strict_string_raises_error() -> None:
     """Test that non-boolean strict config raises TypeError."""
-    import pytest
-
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
             f.write("""
@@ -248,8 +249,6 @@ strict = "false"
 
 def test_config_max_samples_string_raises_error() -> None:
     """Test that non-integer max_samples config raises TypeError."""
-    import pytest
-
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
             f.write("""
@@ -270,8 +269,6 @@ checks_max_samples = "five"
 
 def test_config_max_samples_zero_raises_error() -> None:
     """Test that max_samples < 1 raises ValueError."""
-    import pytest
-
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
             f.write("""
@@ -328,8 +325,6 @@ row_validation_max_errors = 1
 
 def test_config_row_validation_max_errors_zero_raises_error() -> None:
     """Test that row_validation_max_errors < 1 raises ValueError."""
-    import pytest
-
     with tempfile.TemporaryDirectory() as tmpdir:
         with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
             f.write("""

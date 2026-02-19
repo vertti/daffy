@@ -387,7 +387,7 @@ def test_check_columns_invalid_column_type_in_list_raises_when_strict_specs_enab
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
 
     with (
-        patch("daffy.validators.builder.get_strict_specs", return_value=True),
+        patch("daffy.decorators.get_strict_specs", return_value=True),
         pytest.raises(TypeError, match="Invalid column spec at index 1"),
     ):
         process(df)
@@ -416,7 +416,7 @@ def test_check_columns_invalid_column_key_in_dict_raises_when_strict_specs_enabl
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
 
     with (
-        patch("daffy.validators.builder.get_strict_specs", return_value=True),
+        patch("daffy.decorators.get_strict_specs", return_value=True),
         pytest.raises(TypeError, match="Invalid column key at index 1"),
     ):
         process(df)

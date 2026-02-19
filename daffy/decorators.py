@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from daffy.dataframe_types import IntoDataFrameT
     from daffy.validation import ColumnsDef
 
-from daffy.config import get_allow_empty, get_lazy, get_strict
+from daffy.config import get_allow_empty, get_lazy, get_strict, get_strict_specs
 from daffy.utils import (
     assert_is_dataframe,
     get_parameter,
@@ -91,6 +91,7 @@ def _run_validations(
     pipeline = build_validation_pipeline(
         columns=columns,
         strict=get_strict(strict),
+        strict_specs=get_strict_specs(),
         lazy=get_lazy(lazy),
         composite_unique=composite_unique,
         row_validator=row_validator,
