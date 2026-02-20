@@ -102,7 +102,8 @@ def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None, strict_spe
     - Dict with constraints: {"col1": {"dtype": ..., "nullable": False, "required": False, ...}}
 
     Invalid column types (like integers) are silently ignored for backwards compatibility
-    unless strict_specs=True.
+    unless strict_specs=True, in which case a TypeError is raised with the offending
+    index and type name.
     """
     result = ParsedColumnSpec()
 
