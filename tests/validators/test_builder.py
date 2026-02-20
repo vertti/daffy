@@ -348,3 +348,21 @@ class TestPipelineIntegration:
 
         with pytest.raises(AssertionError, match="Missing columns"):
             pipeline.run(ctx)
+
+
+class TestStrictSpecs:
+    def test_strict_specs_raises_on_invalid_column_type(self) -> None:
+        with pytest.raises(TypeError, match="Invalid column spec at index 1"):
+            build_validation_pipeline(
+                columns=["a", 123],
+                strict=False,
+                strict_specs=True,
+                lazy=False,
+                composite_unique=None,
+                row_validator=None,
+                min_rows=None,
+                max_rows=None,
+                exact_rows=None,
+                allow_empty=True,
+                df_columns=["a"],
+            )
