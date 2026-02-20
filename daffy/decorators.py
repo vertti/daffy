@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from daffy.dataframe_types import IntoDataFrameT
     from daffy.validation import ColumnsDef
 
-from daffy.config import get_allow_empty, get_lazy, get_strict
+from daffy.config import get_allow_empty, get_lazy, get_strict, get_strict_specs
 from daffy.utils import (
     assert_is_dataframe,
     get_parameter,
@@ -91,6 +91,7 @@ def _run_validations(
     pipeline = build_validation_pipeline(
         columns=columns,
         strict=get_strict(strict),
+        strict_specs=get_strict_specs(),
         lazy=get_lazy(lazy),
         composite_unique=composite_unique,
         row_validator=row_validator,
@@ -137,6 +138,10 @@ def df_out(
         exact_rows (int, optional): Exact number of rows required. Defaults to None (no constraint).
         allow_empty (bool, optional): Whether empty DataFrames (0 rows) are allowed.
             If None, uses the value from [tool.daffy] allow_empty setting in pyproject.toml.
+
+    Note:
+        When ``[tool.daffy] strict_specs = true`` is set in pyproject.toml, invalid column
+        keys or spec types raise ``TypeError`` instead of being silently ignored.
 
     Returns:
         Callable: Decorated function with preserved DataFrame return type
@@ -241,6 +246,10 @@ def df_in(
         exact_rows (int, optional): Exact number of rows required. Defaults to None (no constraint).
         allow_empty (bool, optional): Whether empty DataFrames (0 rows) are allowed.
             If None, uses the value from [tool.daffy] allow_empty setting in pyproject.toml.
+
+    Note:
+        When ``[tool.daffy] strict_specs = true`` is set in pyproject.toml, invalid column
+        keys or spec types raise ``TypeError`` instead of being silently ignored.
 
     Returns:
         Callable: Decorated function with preserved return type

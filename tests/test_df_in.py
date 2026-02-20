@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import patch
 
 import pandas as pd
 import polars as pl
@@ -376,6 +377,22 @@ def test_check_columns_handles_invalid_column_type_in_list() -> None:
     assert len(result) == 2
 
 
+def test_check_columns_invalid_column_type_in_list_raises_when_strict_specs_enabled() -> None:
+    columns: Any = ["A", 123]
+
+    @df_in(columns=columns)
+    def process(df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
+
+    with (
+        patch("daffy.decorators.get_strict_specs", return_value=True),
+        pytest.raises(TypeError, match="Invalid column spec at index 1"),
+    ):
+        process(df)
+
+
 def test_check_columns_handles_invalid_column_key_in_dict() -> None:
     """Invalid column keys in dict spec are silently ignored."""
     columns: Any = {"A": "int64", 123: "int64"}
@@ -387,6 +404,22 @@ def test_check_columns_handles_invalid_column_key_in_dict() -> None:
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
     result = process(df)
     assert len(result) == 2
+
+
+def test_check_columns_invalid_column_key_in_dict_raises_when_strict_specs_enabled() -> None:
+    columns: Any = {"A": "int64", 123: "int64"}
+
+    @df_in(columns=columns)
+    def process(df: pd.DataFrame) -> pd.DataFrame:
+        return df
+
+    df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
+
+    with (
+        patch("daffy.decorators.get_strict_specs", return_value=True),
+        pytest.raises(TypeError, match="Invalid column key at index 1"),
+    ):
+        process(df)
 
 
 def test_check_columns_handles_invalid_column_key_with_constraints() -> None:

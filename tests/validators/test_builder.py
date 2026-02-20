@@ -23,6 +23,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -39,6 +40,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -56,6 +58,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -73,6 +76,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=["a", "b", "c"],
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -89,6 +93,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=["a", "b"],
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -105,6 +110,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns={"a": "int64"},
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -121,6 +127,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns={"a": {"nullable": False}},
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -137,6 +144,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns={"a": {"unique": True}},
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -153,6 +161,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns={"a": {"checks": {"gt": 0}}},
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -169,6 +178,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=["a"],
             strict=True,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -185,6 +195,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=[["a", "b"]],
             row_validator=None,
@@ -204,6 +215,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=TestModel,
@@ -223,6 +235,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=TestModel,
@@ -240,6 +253,7 @@ class TestBuildValidationPipeline:
         pipeline = build_validation_pipeline(
             columns=None,
             strict=False,
+            strict_specs=False,
             lazy=True,
             composite_unique=None,
             row_validator=None,
@@ -258,6 +272,7 @@ class TestRegexExpansion:
         pipeline = build_validation_pipeline(
             columns={"r/col_\\d+/": {"nullable": False}},
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -282,6 +297,7 @@ class TestPipelineIntegration:
         pipeline = build_validation_pipeline(
             columns={"id": {"dtype": "Int64", "unique": True}, "name": {"nullable": False}},
             strict=True,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=RowModel,
@@ -299,6 +315,7 @@ class TestPipelineIntegration:
         pipeline = build_validation_pipeline(
             columns={"a": {}, "b": {"required": False}},
             strict=True,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -316,6 +333,7 @@ class TestPipelineIntegration:
         pipeline = build_validation_pipeline(
             columns=["a", "b"],
             strict=False,
+            strict_specs=False,
             lazy=False,
             composite_unique=None,
             row_validator=None,
@@ -330,3 +348,21 @@ class TestPipelineIntegration:
 
         with pytest.raises(AssertionError, match="Missing columns"):
             pipeline.run(ctx)
+
+
+class TestStrictSpecs:
+    def test_strict_specs_raises_on_invalid_column_type(self) -> None:
+        with pytest.raises(TypeError, match="Invalid column spec at index 1"):
+            build_validation_pipeline(
+                columns=["a", 123],
+                strict=False,
+                strict_specs=True,
+                lazy=False,
+                composite_unique=None,
+                row_validator=None,
+                min_rows=None,
+                max_rows=None,
+                exact_rows=None,
+                allow_empty=True,
+                df_columns=["a"],
+            )

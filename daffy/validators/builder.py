@@ -55,6 +55,7 @@ def _expand_specs(specs: dict[str, Any] | list[str], resolved: dict[str, list[st
 def build_validation_pipeline(  # noqa: C901
     columns: Sequence[Any] | dict[Any, Any] | None,
     strict: bool,
+    strict_specs: bool,
     lazy: bool,
     composite_unique: list[list[str]] | None,
     row_validator: type | None,
@@ -74,7 +75,7 @@ def build_validation_pipeline(  # noqa: C901
         )
 
     if columns:
-        spec = parse_column_spec(columns)
+        spec = parse_column_spec(columns, strict_specs=strict_specs)
 
         missing_required, resolved_required = _resolve_columns(spec.required_columns, df_columns)
         if missing_required:

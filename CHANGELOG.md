@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 - Declared `pydantic` optional dependency extra so `pip install 'daffy[pydantic]'` matches runtime install guidance
 - Added docs contract tests to detect signature/example drift in `README.md` and `docs/api.md`
+- Added opt-in strict column spec validation via `[tool.daffy] strict_specs = true` for invalid column keys/types
 
 ## 2.6.0
 
