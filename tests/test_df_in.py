@@ -500,6 +500,14 @@ def test_df_in_dict_shorthand(basic_pandas_df: pd.DataFrame) -> None:
     test_fn(basic_pandas_df)
 
 
+def test_df_in_dict_shorthand_polars(basic_polars_df: pl.DataFrame) -> None:
+    @df_in({"Brand": pl.datatypes.String, "Price": pl.datatypes.Int64})
+    def test_fn(my_input: Any) -> Any:
+        return my_input
+
+    test_fn(basic_polars_df)
+
+
 @pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
 def test_df_in_list_shorthand_missing_column(df: IntoDataFrame) -> None:
     @df_in(["Brand", "NonExistent"])
