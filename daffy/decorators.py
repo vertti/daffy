@@ -174,7 +174,7 @@ def df_out(
 
 @overload
 def df_in(
-    name: ColumnsDef,
+    columns: ColumnsDef,
     /,
     *,
     strict: bool | None = ...,
