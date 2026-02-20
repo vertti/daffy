@@ -37,16 +37,16 @@ Validates DataFrame parameters passed to a function.
 **Examples:**
 
 ```python
-# Simple column list
-@df_in(columns=["a", "b", "c"])
+# Column list
+@df_in(["a", "b", "c"])
 
 # With dtypes
-@df_in(columns={"a": "int64", "b": "object"})
+@df_in({"a": "int64", "b": "object"})
 
 # With constraints
-@df_in(columns={"price": {"dtype": "float64", "nullable": False, "checks": {"gt": 0}}})
+@df_in({"price": {"dtype": "float64", "nullable": False, "checks": {"gt": 0}}})
 
-# Multiple DataFrames
+# Multiple DataFrames — use name to target specific parameters
 @df_in(name="orders", columns=["id", "total"])
 @df_in(name="customers", columns=["id", "name"])
 
@@ -54,7 +54,7 @@ Validates DataFrame parameters passed to a function.
 @df_in(row_validator=OrderModel)
 
 # Shape/lazy controls
-@df_in(columns={"email": {"nullable": False}}, lazy=True, min_rows=1, allow_empty=False)
+@df_in({"email": {"nullable": False}}, lazy=True, min_rows=1, allow_empty=False)
 ```
 
 ---
@@ -94,9 +94,9 @@ Validates the DataFrame returned by a function.
 **Examples:**
 
 ```python
-@df_out(columns=["result", "score"])
+@df_out(["result", "score"])
 
-@df_out(columns={"score": "float64"}, strict=True)
+@df_out({"score": "float64"}, strict=True)
 
 @df_out(row_validator=ResultModel)
 

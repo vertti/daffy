@@ -11,14 +11,14 @@ import pandas as pd
 from daffy import df_in, df_out
 
 
-@df_out(columns={"product_id": "int64", "name": "object", "price": "float64", "category": "object"})
+@df_out({"product_id": "int64", "name": "object", "price": "float64", "category": "object"})
 def load_products(filepath: str) -> pd.DataFrame:
     """Load product data from CSV."""
     return pd.read_csv(filepath)
 
 
-@df_in(columns=["product_id", "name", "price", "category"])
-@df_out(columns=["product_id", "name", "price", "category", "price_tier"])
+@df_in(["product_id", "name", "price", "category"])
+@df_out(["product_id", "name", "price", "category", "price_tier"])
 def add_price_tier(df: pd.DataFrame) -> pd.DataFrame:
     """Add price tier classification."""
     df = df.copy()
@@ -30,8 +30,8 @@ def add_price_tier(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-@df_in(columns=["product_id", "name", "price", "category", "price_tier"])
-@df_out(columns=["category", "avg_price", "product_count"])
+@df_in(["product_id", "name", "price", "category", "price_tier"])
+@df_out(["category", "avg_price", "product_count"])
 def summarize_by_category(df: pd.DataFrame) -> pd.DataFrame:
     """Aggregate products by category."""
     return df.groupby("category").agg(
@@ -70,7 +70,7 @@ PRODUCTS_DB = pd.DataFrame({
 })
 
 
-@df_out(columns={"id": "int64", "name": "object", "price": "float64", "in_stock": "bool"})
+@df_out({"id": "int64", "name": "object", "price": "float64", "in_stock": "bool"})
 def get_products_df(in_stock_only: bool = False) -> pd.DataFrame:
     """Fetch products, optionally filtering to in-stock items."""
     df = PRODUCTS_DB.copy()
@@ -109,8 +109,8 @@ class DataPayload(BaseModel):
     data: list[dict]
 
 
-@df_in(columns={"value": {"dtype": "float64", "checks": {"gt": 0}}})
-@df_out(columns=["value", "result"])
+@df_in({"value": {"dtype": "float64", "checks": {"gt": 0}}})
+@df_out(["value", "result"])
 def transform(df: pd.DataFrame) -> pd.DataFrame:
     """Transform values - validates input and output."""
     df = df.copy()

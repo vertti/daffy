@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- `@df_in(["col1", "col2"])` shorthand: pass columns as the first positional argument
+
 ## 2.6.1
 
 ### Changed

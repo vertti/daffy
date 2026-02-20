@@ -39,8 +39,8 @@ Works with whatever DataFrame library you already have installed. Python 3.10–
 ```python
 from daffy import df_in, df_out
 
-@df_in(columns=["price", "bedrooms", "location"])
-@df_out(columns=["price_per_room", "price_category"])
+@df_in(["price", "bedrooms", "location"])
+@df_out(["price_per_room", "price_category"])
 def analyze_housing(houses_df):
     # Transform raw housing data into price analysis
     return analyzed_df
@@ -70,8 +70,8 @@ Most DataFrame validation tools are schema-first (define schemas separately) or 
 ```python
 from daffy import df_in, df_out
 
-@df_in(columns=["Brand", "Price"])
-@df_out(columns=["Brand", "Price", "Discount"])
+@df_in(["Brand", "Price"])
+@df_out(["Brand", "Price", "Discount"])
 def apply_discount(df):
     df = df.copy()
     df["Discount"] = df["Price"] * 0.1
@@ -83,7 +83,7 @@ def apply_discount(df):
 Match dynamic column names with regex patterns:
 
 ```python
-@df_in(columns=["id", "r/feature_\\d+/"])
+@df_in(["id", "r/feature_\\d+/"])
 def process_features(df):
     return df
 ```
@@ -93,7 +93,7 @@ def process_features(df):
 Vectorized checks with zero row iteration overhead:
 
 ```python
-@df_in(columns={
+@df_in({
     "price": {"checks": {"gt": 0, "lt": 10000}},
     "status": {"checks": {"isin": ["active", "pending", "closed"]}},
     "email": {"checks": {"str_regex": r"^[^@]+@[^@]+\.[^@]+$"}},
@@ -108,13 +108,11 @@ Also supported: `notin`, `str_startswith`, `str_endswith`, `str_contains`, `str_
 ### Nullability and uniqueness
 
 ```python
-@df_in(
-    columns={
-        "user_id": {"unique": True, "nullable": False},  # user_id must be unique and not null
-        "email": {"nullable": False},  # email cannot be null
-        "age": {"dtype": "int64"},
-    }
-)
+@df_in({
+    "user_id": {"unique": True, "nullable": False},  # user_id must be unique and not null
+    "email": {"nullable": False},  # email cannot be null
+    "age": {"dtype": "int64"},
+})
 def clean_users(df):
     return df
 ```

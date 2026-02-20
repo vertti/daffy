@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -172,8 +172,39 @@ def df_out(
     return wrapper_df_out
 
 
+@overload
 def df_in(
-    name: str | None = None,
+    columns: ColumnsDef,
+    /,
+    *,
+    strict: bool | None = ...,
+    lazy: bool | None = ...,
+    composite_unique: list[list[str]] | None = ...,
+    row_validator: type[BaseModel] | None = ...,
+    min_rows: int | None = ...,
+    max_rows: int | None = ...,
+    exact_rows: int | None = ...,
+    allow_empty: bool | None = ...,
+) -> Callable[[Callable[..., InReturnT]], Callable[..., InReturnT]]: ...
+
+
+@overload
+def df_in(
+    name: str | None = ...,
+    columns: ColumnsDef = ...,
+    strict: bool | None = ...,
+    lazy: bool | None = ...,
+    composite_unique: list[list[str]] | None = ...,
+    row_validator: type[BaseModel] | None = ...,
+    min_rows: int | None = ...,
+    max_rows: int | None = ...,
+    exact_rows: int | None = ...,
+    allow_empty: bool | None = ...,
+) -> Callable[[Callable[..., InReturnT]], Callable[..., InReturnT]]: ...
+
+
+def df_in(
+    name: str | ColumnsDef | None = None,
     columns: ColumnsDef = None,
     strict: bool | None = None,
     lazy: bool | None = None,
@@ -190,6 +221,8 @@ def df_in(
 
     Args:
         name (Optional[str], optional): Name of the parameter that contains a DataFrame. Defaults to None.
+            Alternatively, a column specification (list or dict) may be passed as the first positional
+            argument as a shorthand for ``columns=`` — e.g. ``@df_in(["col1", "col2"])``.
         columns (Union[Sequence[str], Dict[str, Any]], optional): Sequence or dict that describes expected columns
             of the DataFrame.
             Sequence can contain regex patterns in format "r/pattern/" (e.g., "r/Col[0-9]+/").
@@ -213,6 +246,14 @@ def df_in(
         Callable: Decorated function with preserved return type
 
     """
+    if name is not None and not isinstance(name, str):
+        if columns is not None:
+            raise TypeError(
+                "Cannot pass columns as both the first positional argument and the 'columns' keyword argument"
+            )
+        columns = name
+        name = None
+
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
