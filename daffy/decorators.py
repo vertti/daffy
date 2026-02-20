@@ -221,6 +221,8 @@ def df_in(
 
     Args:
         name (Optional[str], optional): Name of the parameter that contains a DataFrame. Defaults to None.
+            Alternatively, a column specification (list or dict) may be passed as the first positional
+            argument as a shorthand for ``columns=`` — e.g. ``@df_in(["col1", "col2"])``.
         columns (Union[Sequence[str], Dict[str, Any]], optional): Sequence or dict that describes expected columns
             of the DataFrame.
             Sequence can contain regex patterns in format "r/pattern/" (e.g., "r/Col[0-9]+/").
