@@ -517,7 +517,7 @@ def test_df_in_list_shorthand_missing_column(df: IntoDataFrame) -> None:
     with pytest.raises(AssertionError) as excinfo:
         test_fn(df)
 
-    assert "Missing columns: ['NonExistent']" in str(excinfo.value)
+    assert "Missing columns: ['NonExistent'] in function 'test_fn' parameter 'my_input'" in str(excinfo.value)
 
 
 def test_df_in_shorthand_conflict_raises_type_error() -> None:
