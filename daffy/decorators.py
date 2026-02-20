@@ -139,6 +139,10 @@ def df_out(
         allow_empty (bool, optional): Whether empty DataFrames (0 rows) are allowed.
             If None, uses the value from [tool.daffy] allow_empty setting in pyproject.toml.
 
+    Note:
+        When ``[tool.daffy] strict_specs = true`` is set in pyproject.toml, invalid column
+        keys or spec types raise ``TypeError`` instead of being silently ignored.
+
     Returns:
         Callable: Decorated function with preserved DataFrame return type
 
@@ -242,6 +246,10 @@ def df_in(
         exact_rows (int, optional): Exact number of rows required. Defaults to None (no constraint).
         allow_empty (bool, optional): Whether empty DataFrames (0 rows) are allowed.
             If None, uses the value from [tool.daffy] allow_empty setting in pyproject.toml.
+
+    Note:
+        When ``[tool.daffy] strict_specs = true`` is set in pyproject.toml, invalid column
+        keys or spec types raise ``TypeError`` instead of being silently ignored.
 
     Returns:
         Callable: Decorated function with preserved return type
