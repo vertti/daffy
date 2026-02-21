@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 2.7.0
 
 ### Added
 
 - `@df_in(["col1", "col2"])` shorthand: pass columns as the first positional argument
+- Opt-in strict column spec validation via `[tool.daffy] strict_specs = true` for invalid column keys/types
+
+### Changed
+
+- Config discovery now searches `pyproject.toml` from the current directory up through parent directories
+- Configuration caching is now keyed by current working directory for deterministic behavior across cwd changes
+- Unnamed `df_in` now selects the first DataFrame-like argument instead of always taking the first positional argument
 
 ## 2.6.1
 
@@ -16,15 +23,11 @@ All notable changes to this project will be documented in this file.
 - Early import failure now triggers only when none of the supported DataFrame libraries are installed
 - Updated optional dependency tests and isolation docs/scripts to align with the expanded backend detection contract
 - Synced API docs and README examples with current `df_in`/`df_out`/`df_log` signatures and built-in check names
-- Config discovery now searches `pyproject.toml` from the current directory up through parent directories
-- Configuration caching is now keyed by current working directory for deterministic behavior across cwd changes
-- Unnamed `df_in` now selects the first DataFrame-like argument instead of always taking the first positional argument
 
 ### Added
 
 - Declared `pydantic` optional dependency extra so `pip install 'daffy[pydantic]'` matches runtime install guidance
 - Added docs contract tests to detect signature/example drift in `README.md` and `docs/api.md`
-- Added opt-in strict column spec validation via `[tool.daffy] strict_specs = true` for invalid column keys/types
 
 ## 2.6.0
 
