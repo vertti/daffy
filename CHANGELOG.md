@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - `@df_in(["col1", "col2"])` shorthand: pass columns as the first positional argument
-- Opt-in strict column spec validation via `[tool.daffy] strict_specs = true` for invalid column keys/types
+- Opt-in `strict_specs` mode (`[tool.daffy] strict_specs = true`): raises `TypeError` on invalid column spec keys or types instead of silently ignoring them
 
 ### Changed
 
