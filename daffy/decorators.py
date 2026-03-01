@@ -18,9 +18,9 @@ from daffy.config import get_allow_empty, get_lazy, get_strict, get_strict_specs
 from daffy.utils import (
     assert_is_dataframe,
     get_parameter,
-    get_parameter_name,
     log_dataframe_input,
     log_dataframe_output,
+    resolve_parameter,
 )
 from daffy.validators.builder import build_validation_pipeline
 from daffy.validators.context import ValidationContext
@@ -269,8 +269,7 @@ def df_in(
     def wrapper_df_in(func: Callable[..., InReturnT]) -> Callable[..., InReturnT]:
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> InReturnT:
-            df = get_parameter(func, name, *args, **kwargs)
-            param_name = get_parameter_name(func, name, *args, **kwargs)
+            df, param_name = resolve_parameter(func, name, *args, **kwargs)
             assert_is_dataframe(df, "parameter type")
             _run_validations(
                 df,

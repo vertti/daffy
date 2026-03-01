@@ -31,34 +31,28 @@ def assert_is_dataframe(obj: Any, context: str) -> None:
         raise AssertionError(f"Wrong {context}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead.")
 
 
-def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> Any:
-    """Extract a parameter value from function arguments.
+def resolve_parameter(
+    func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any
+) -> tuple[Any, str | None]:
+    """Extract a parameter value and its name from function arguments in a single pass.
 
-    Args:
-        func: The function whose parameters to inspect
-        name: Name of the parameter to extract. If None, the function first attempts to
-            find and return a DataFrame-like argument; if no DataFrame-like argument is
-            found, it falls back to returning the first positional arg or kwarg.
-        *args: Positional arguments passed to the function
-        **kwargs: Keyword arguments passed to the function
-
-    Returns:
-        The value of the requested parameter
-
-    Raises:
-        ValueError: If the named parameter cannot be found in args or kwargs
-
+    Combines the work of get_parameter and get_parameter_name to avoid
+    duplicate signature introspection.
     """
     if not name:
         first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
         if first_dataframe_arg is not None:
-            return first_dataframe_arg[0]
+            return first_dataframe_arg
 
-        # Keep existing fallback behavior when no DataFrame-like argument is present.
-        return args[0] if args else next(iter(kwargs.values()), None)
+        value = args[0] if args else next(iter(kwargs.values()), None)
+        if args:
+            param_name: str | None = next(iter(inspect.signature(func).parameters.keys()))
+        else:
+            param_name = next(iter(kwargs.keys()), None)
+        return value, param_name
 
     if name in kwargs:
-        return kwargs[name]
+        return kwargs[name], name
 
     func_params_in_order = list(inspect.signature(func).parameters.keys())
 
@@ -73,40 +67,17 @@ def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any,
             f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
         )
 
-    return args[parameter_location]
+    return args[parameter_location], name
+
+
+def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> Any:
+    """Extract a parameter value from function arguments."""
+    return resolve_parameter(func, name, *args, **kwargs)[0]
 
 
 def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> str | None:
-    """Resolve the effective parameter name used for validation.
-
-    Resolution order:
-    1. Return the explicit ``name`` argument when provided.
-    2. Find the first DataFrame-like argument via ``_find_first_dataframe_argument``.
-    3. Fall back to the first positional parameter name if positional args were provided.
-    4. Fall back to the first keyword argument name.
-
-    Args:
-        func: The function whose parameters to inspect.
-        name: Explicit parameter name to use, or ``None`` for automatic resolution.
-        *args: Positional arguments passed to the function.
-        **kwargs: Keyword arguments passed to the function.
-
-    Returns:
-        The resolved parameter name, or ``None`` when no name can be determined.
-
-    """
-    if name:
-        return name
-
-    first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
-    if first_dataframe_arg is not None:
-        return first_dataframe_arg[1]
-
-    if args:
-        func_params_in_order = list(inspect.signature(func).parameters.keys())
-        return func_params_in_order[0]
-
-    return next(iter(kwargs.keys()), None)
+    """Resolve the effective parameter name used for validation."""
+    return resolve_parameter(func, name, *args, **kwargs)[1]
 
 
 def _find_first_dataframe_argument(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, str] | None:
