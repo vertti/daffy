@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
+import narwhals as nw
+
 if TYPE_CHECKING:
     from daffy.validators.context import ValidationContext
 
@@ -55,13 +57,18 @@ class NullableValidator:
     non_nullable_columns: list[str]
 
     def validate(self, ctx: ValidationContext) -> list[str]:
-        violations: list[tuple[str, int]] = []
+        cols_to_check = [col for col in self.non_nullable_columns if ctx.has_column(col)]
+        if not cols_to_check:
+            return []
 
-        for col in self.non_nullable_columns:
-            if ctx.has_column(col):
-                null_count = int(ctx.get_series(col).is_null().sum())
-                if null_count > 0:
-                    violations.append((col, null_count))
+        exprs = [nw.col(col).is_null().sum().alias(col) for col in cols_to_check]
+        results = ctx.nw_df.select(*exprs).to_dict(as_series=False)
+
+        violations: list[tuple[str, int]] = []
+        for col in cols_to_check:
+            null_count = int(results[col][0])
+            if null_count > 0:
+                violations.append((col, null_count))
 
         if not violations:
             return []
