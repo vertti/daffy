@@ -95,5 +95,3 @@ def test_get_parameter_unnamed_falls_back_when_varkwargs_have_no_dataframe() -> 
 
     parameter_name = ParameterResolver(func).resolve(None, "metadata", retries=3, verbose=True)[1]
     assert parameter_name == "meta"
-
-

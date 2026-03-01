@@ -66,7 +66,6 @@ class ParameterResolver:
                 param_name = next(iter(kwargs.keys()), None)
             return value, param_name
 
-
         if name in kwargs:
             return kwargs[name], name
 
