@@ -46,7 +46,7 @@ def _evaluate_mask(nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: 
     return fail_count, samples
 
 
-def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int = 5) -> tuple[int, list[Any]]:
+def apply_check(series_or_nws: Any, check_name: str, check_value: Any, max_samples: int = 5) -> tuple[int, list[Any]]:
     """Apply a single check to a series.
 
     Check value can be:
@@ -58,7 +58,7 @@ def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int
         Tuple of (fail_count, sample_failing_values)
 
     """
-    nws = _nw_series(series)
+    nws = series_or_nws if isinstance(series_or_nws, nw.Series) else _nw_series(series_or_nws)
 
     # Handle custom callable checks
     if callable(check_value):
@@ -106,7 +106,9 @@ def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int
     return _evaluate_mask(nws, check_masks[check_name](), max_samples)
 
 
-def validate_checks(df: Any, column: str, checks: dict[str, Any], max_samples: int = 5) -> list[CheckViolation]:
+def validate_checks(
+    nws: nw.Series[Any], column: str, checks: dict[str, Any], max_samples: int = 5
+) -> list[CheckViolation]:
     """Run all checks on a column.
 
     Returns:
@@ -114,10 +116,9 @@ def validate_checks(df: Any, column: str, checks: dict[str, Any], max_samples: i
 
     """
     violations: list[CheckViolation] = []
-    series = df[column]
 
     for check_name, check_value in checks.items():
-        fail_count, samples = apply_check(series, check_name, check_value, max_samples)
+        fail_count, samples = apply_check(nws, check_name, check_value, max_samples)
         if fail_count > 0:
             violations.append((column, check_name, fail_count, samples))
 

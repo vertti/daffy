@@ -25,7 +25,7 @@ class ChecksValidator:
             if not ctx.has_column(col):
                 continue
 
-            violations = run_checks(ctx.df, col, checks, max_samples)
+            violations = run_checks(ctx.get_series(col), col, checks, max_samples)
             all_violations.extend(violations)
 
         if not all_violations:
