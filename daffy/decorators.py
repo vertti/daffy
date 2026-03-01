@@ -16,11 +16,10 @@ if TYPE_CHECKING:
 
 from daffy.config import get_allow_empty, get_lazy, get_strict, get_strict_specs
 from daffy.utils import (
+    ParameterResolver,
     assert_is_dataframe,
-    get_parameter,
     log_dataframe_input,
     log_dataframe_output,
-    resolve_parameter,
 )
 from daffy.validators.builder import build_validation_pipeline
 from daffy.validators.context import ValidationContext
@@ -267,9 +266,11 @@ def df_in(
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
     def wrapper_df_in(func: Callable[..., InReturnT]) -> Callable[..., InReturnT]:
+        resolver = ParameterResolver(func)
+
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> InReturnT:
-            df, param_name = resolve_parameter(func, name, *args, **kwargs)
+            df, param_name = resolver.resolve(name, *args, **kwargs)
             assert_is_dataframe(df, "parameter type")
             _run_validations(
                 df,
@@ -310,10 +311,13 @@ def df_log(
     """
 
     def wrapper_df_log(func: Callable[..., LogReturnT]) -> Callable[..., LogReturnT]:
+        resolver = ParameterResolver(func)
+
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> LogReturnT:
             func_name = getattr(func, "__name__", "<unknown>")
-            log_dataframe_input(level, func_name, get_parameter(func, None, *args, **kwargs), include_dtypes)
+            df, _ = resolver.resolve(None, *args, **kwargs)
+            log_dataframe_input(level, func_name, df, include_dtypes)
             result = func(*args, **kwargs)
             log_dataframe_output(level, func_name, result, include_dtypes)
             return result
