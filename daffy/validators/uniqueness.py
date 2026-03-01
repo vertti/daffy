@@ -35,9 +35,9 @@ class CompositeUniqueValidator:
         errors = []
 
         for combo in self.column_combinations:
+            col_desc = " + ".join(f"'{c}'" for c in combo)
             missing = [c for c in combo if not ctx.has_column(c)]
             if missing:
-                col_desc = " + ".join(f"'{c}'" for c in combo)
                 errors.append(
                     f"composite_unique references missing columns {missing} in combination [{col_desc}]{ctx.param_info}"
                 )
@@ -47,7 +47,6 @@ class CompositeUniqueValidator:
             dup_count = ctx.row_count - unique_count
 
             if dup_count > 0:
-                col_desc = " + ".join(f"'{c}'" for c in combo)
                 errors.append(
                     f"Columns {col_desc}{ctx.param_info} contain {dup_count} "
                     f"duplicate combinations but composite_unique is set"

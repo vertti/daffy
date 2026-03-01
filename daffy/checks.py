@@ -36,9 +36,7 @@ def _nw_series(series: Any) -> nw.Series[Any]:
     return nw.from_native(series, series_only=True)
 
 
-def _evaluate_mask(
-    nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int
-) -> tuple[int, list[Any]]:
+def _evaluate_mask(nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int) -> tuple[int, list[Any]]:
     """Count failures and sample failing values from a boolean mask (True = failing)."""
     nw_mask = fail_mask.fill_null(True)
     fail_count = int(nw_mask.sum())
