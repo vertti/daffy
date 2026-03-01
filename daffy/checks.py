@@ -36,6 +36,18 @@ def _nw_series(series: Any) -> nw.Series[Any]:
     return nw.from_native(series, series_only=True)
 
 
+def _evaluate_mask(
+    nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int
+) -> tuple[int, list[Any]]:
+    """Count failures and sample failing values from a boolean mask (True = failing)."""
+    nw_mask = fail_mask.fill_null(True)
+    fail_count = int(nw_mask.sum())
+    if fail_count == 0:
+        return 0, []
+    samples = nws.filter(nw_mask).head(max_samples).to_list()
+    return fail_count, samples
+
+
 def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int = 5) -> tuple[int, list[Any]]:
     """Apply a single check to a series.
 
@@ -68,13 +80,7 @@ def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int
             ) from None
 
         # Custom checks return True for VALID values, but we need True for INVALID.
-        # Invert the result and treat nulls as failures (fill_null(True)).
-        nw_mask = (~nw_result).fill_null(True)
-        fail_count = int(nw_mask.sum())
-        if fail_count == 0:
-            return 0, []
-        samples = nws.filter(nw_mask).head(max_samples).to_list()
-        return fail_count, samples
+        return _evaluate_mask(nws, ~nw_result, max_samples)
 
     # Built-in checks: each lambda returns a mask where True = FAILING value.
     # The ~ operator inverts comparison results (e.g., ~(x > 0) means "not greater than 0").
@@ -99,13 +105,7 @@ def apply_check(series: Any, check_name: str, check_value: Any, max_samples: int
     if check_name not in check_masks:
         raise ValueError(f"Unknown check: {check_name}")
 
-    nw_mask = check_masks[check_name]().fill_null(True)
-    fail_count = int(nw_mask.sum())
-    if fail_count == 0:
-        return 0, []
-
-    samples = nws.filter(nw_mask).head(max_samples).to_list()
-    return fail_count, samples
+    return _evaluate_mask(nws, check_masks[check_name](), max_samples)
 
 
 def validate_checks(df: Any, column: str, checks: dict[str, Any], max_samples: int = 5) -> list[CheckViolation]:
