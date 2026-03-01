@@ -38,6 +38,11 @@ class ParameterResolver:
         sig = inspect.signature(func)
         self.params = list(sig.parameters.values())
         self.param_names = [p.name for p in self.params]
+
+        # Precompute lists for faster lookup during resolve
+        self.param_kinds = [p.kind for p in self.params]
+        self.param_defaults = [p.default for p in self.params]
+
         self.var_pos_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_POSITIONAL), None)
         self.var_kw_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_KEYWORD), None)
 
@@ -76,15 +81,17 @@ class ParameterResolver:
                 f"Parameter '{name}' not found in function signature. Available: {self.param_names}"
             ) from None
 
-        param = self.params[parameter_location]
-        if param.kind == inspect.Parameter.KEYWORD_ONLY:
-            if param.default is not inspect.Parameter.empty:
-                return param.default, name
+        kind = self.param_kinds[parameter_location]
+        default = self.param_defaults[parameter_location]
+
+        if kind == inspect.Parameter.KEYWORD_ONLY:
+            if default is not inspect.Parameter.empty:
+                return default, name
             raise ValueError(f"Required keyword-only parameter '{name}' not provided in arguments.")
 
         if parameter_location >= len(args):
-            if param.default is not inspect.Parameter.empty:
-                return param.default, name
+            if default is not inspect.Parameter.empty:
+                return default, name
             raise ValueError(
                 f"Parameter '{name}' not found in function arguments. "
                 f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
