@@ -85,24 +85,6 @@ class ParameterResolver:
         return args[parameter_location], name
 
 
-# Keep backwards compatibility for any tests or imports
-def resolve_parameter(
-    func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any
-) -> tuple[Any, str | None]:
-    """Extract a parameter value and its name from function arguments in a single pass."""
-    return ParameterResolver(func).resolve(name, *args, **kwargs)
-
-
-def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> Any:
-    """Extract a parameter value from function arguments."""
-    return ParameterResolver(func).resolve(name, *args, **kwargs)[0]
-
-
-def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> str | None:
-    """Resolve the effective parameter name used for validation."""
-    return ParameterResolver(func).resolve(name, *args, **kwargs)[1]
-
-
 def describe_dataframe(df: Any, include_dtypes: bool = False) -> str:
     nw_df = nw.from_native(df, eager_only=True)
     result = f"columns: {nw_df.columns}"
