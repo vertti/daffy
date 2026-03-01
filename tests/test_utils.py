@@ -95,3 +95,12 @@ def test_get_parameter_unnamed_falls_back_when_varkwargs_have_no_dataframe() -> 
 
     parameter_name = get_parameter_name(func, None, "metadata", retries=3, verbose=True)
     assert parameter_name == "meta"
+
+def test_resolve_parameter_backwards_compatibility() -> None:
+    from daffy.utils import resolve_parameter
+    
+    def func(a, b): return a + b
+    
+    val, name = resolve_parameter(func, "a", 1, 2)
+    assert val == 1
+    assert name == "a"

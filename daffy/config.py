@@ -54,7 +54,7 @@ def load_config(cwd: Path | None = None) -> dict[str, Any]:
                 if isinstance(default_value, bool):
                     if not isinstance(val, bool):
                         raise TypeError(f"Config '{key}' must be a boolean, got {type(val).__name__}: {val!r}")
-                elif isinstance(default_value, int):
+                else:  # isinstance(default_value, int)
                     if not isinstance(val, int) or isinstance(val, bool):
                         raise TypeError(f"Config '{key}' must be an integer, got {type(val).__name__}: {val!r}")
                     if val < 1:

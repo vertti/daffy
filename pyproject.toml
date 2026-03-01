@@ -1,6 +1,6 @@
 [project]
 name = "daffy"
-version = "2.7.0"
+version = "2.8.0"
 description = "Function decorators for DataFrame validation - columns, data types, and row-level validation with Pydantic. Supports Pandas, Polars, Modin, and PyArrow."
 authors = [
  { name="Janne Sinivirta", email="janne.sinivirta@gmail.com" },
