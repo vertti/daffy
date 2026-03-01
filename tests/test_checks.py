@@ -1,5 +1,6 @@
 """Tests for value checks."""
 
+import narwhals as nw
 import pandas as pd
 import pytest
 
@@ -328,7 +329,6 @@ class TestEdgeCases:
 class TestValidateChecks:
     def test_single_check_passes(self) -> None:
         df = pd.DataFrame({"price": [1, 2, 3]})
-        import narwhals as nw
 
         nws = nw.from_native(df, eager_only=True)["price"]
         violations = validate_checks(nws, "price", {"gt": 0})
@@ -336,7 +336,6 @@ class TestValidateChecks:
 
     def test_single_check_fails(self) -> None:
         df = pd.DataFrame({"price": [0, 1, 2]})
-        import narwhals as nw
 
         nws = nw.from_native(df, eager_only=True)["price"]
         violations = validate_checks(nws, "price", {"gt": 0})
@@ -349,7 +348,6 @@ class TestValidateChecks:
 
     def test_multiple_checks_all_pass(self) -> None:
         df = pd.DataFrame({"score": [50, 60, 70]})
-        import narwhals as nw
 
         nws = nw.from_native(df, eager_only=True)["score"]
         violations = validate_checks(nws, "score", {"gt": 0, "lt": 100})
@@ -357,7 +355,6 @@ class TestValidateChecks:
 
     def test_multiple_checks_one_fails(self) -> None:
         df = pd.DataFrame({"score": [50, 60, 150]})
-        import narwhals as nw
 
         nws = nw.from_native(df, eager_only=True)["score"]
         violations = validate_checks(nws, "score", {"gt": 0, "lt": 100})

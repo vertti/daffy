@@ -41,7 +41,7 @@ class ParameterResolver:
         self.var_pos_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_POSITIONAL), None)
         self.var_kw_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_KEYWORD), None)
 
-    def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None]:  # noqa: C901
+    def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None]:  # noqa: C901, PLR0911, PLR0912
         """Extract a parameter value and its name from function arguments."""
         if not name:
             # 1. Search positional arguments
@@ -66,6 +66,7 @@ class ParameterResolver:
                 param_name = next(iter(kwargs.keys()), None)
             return value, param_name
 
+
         if name in kwargs:
             return kwargs[name], name
 
@@ -76,7 +77,15 @@ class ParameterResolver:
                 f"Parameter '{name}' not found in function signature. Available: {self.param_names}"
             ) from None
 
+        param = self.params[parameter_location]
+        if param.kind == inspect.Parameter.KEYWORD_ONLY:
+            if param.default is not inspect.Parameter.empty:
+                return param.default, name
+            raise ValueError(f"Required keyword-only parameter '{name}' not provided in arguments.")
+
         if parameter_location >= len(args):
+            if param.default is not inspect.Parameter.empty:
+                return param.default, name
             raise ValueError(
                 f"Parameter '{name}' not found in function arguments. "
                 f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
