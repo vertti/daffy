@@ -82,7 +82,7 @@ def build_validation_pipeline(  # noqa: C901
             pipeline.add(ColumnsExistValidator(missing_required, df_columns))
 
         _, resolved_optional = _resolve_columns(spec.optional_columns, df_columns)
-        _, resolved_all = _resolve_columns(spec.all_columns, df_columns)
+        resolved_all = {**resolved_required, **resolved_optional}
 
         validators = [
             (spec.dtype_constraints, DtypeValidator),
