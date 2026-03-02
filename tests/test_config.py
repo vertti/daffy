@@ -381,3 +381,8 @@ def test_get_config_uses_cache_for_same_cwd() -> None:
             assert first["strict"] is True
             assert second["strict"] is True
             assert mocked_load_config.call_count == 1
+
+
+def test_get_int_config_invalid_override() -> None:
+    with pytest.raises(ValueError, match="must be >="):
+        get_checks_max_samples(0)

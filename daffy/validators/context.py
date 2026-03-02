@@ -29,7 +29,7 @@ class ValidationContext:
         object.__setattr__(self, "columns", tuple(nw_df.columns))
         object.__setattr__(self, "column_set", frozenset(nw_df.columns))
         object.__setattr__(self, "row_count", nw_df.shape[0])
-        object.__setattr__(self, "schema", {col: nw_df[col].dtype for col in nw_df.columns})
+        object.__setattr__(self, "schema", dict(nw_df.schema))
 
     @property
     def param_info(self) -> str:

@@ -26,37 +26,6 @@ _DEFAULT_CHECKS_MAX_SAMPLES = 5
 _DEFAULT_ALLOW_EMPTY = True
 
 
-def _validate_bool_config(daffy_config: dict[str, Any], key: str) -> bool | None:
-    """Validate and extract a boolean config value.
-
-    Returns None if key not present. Raises TypeError if value is not a boolean.
-    """
-    if key not in daffy_config:
-        return None
-    value = daffy_config[key]
-    if not isinstance(value, bool):
-        raise TypeError(f"Config '{key}' must be a boolean, got {type(value).__name__}: {value!r}")
-    return value
-
-
-def _validate_int_config(daffy_config: dict[str, Any], key: str, min_value: int = 1) -> int | None:
-    """Validate and extract an integer config value.
-
-    Returns None if key not present. Raises TypeError/ValueError if invalid.
-    """
-    if key not in daffy_config:
-        return None
-    value = daffy_config[key]
-    if not isinstance(value, int) or isinstance(value, bool):
-        raise TypeError(f"Config '{key}' must be an integer, got {type(value).__name__}: {value!r}")
-    if value < min_value:
-        raise ValueError(f"Config '{key}' must be >= {min_value}, got {value}")
-    return value
-
-
-_BOOL_KEYS = [_KEY_STRICT, _KEY_LAZY, _KEY_STRICT_SPECS, _KEY_ALLOW_EMPTY]
-_INT_KEYS = [_KEY_ROW_VALIDATION_MAX_ERRORS, _KEY_CHECKS_MAX_SAMPLES]
-
 _DEFAULTS: dict[str, Any] = {
     _KEY_STRICT: _DEFAULT_STRICT,
     _KEY_LAZY: _DEFAULT_LAZY,
@@ -79,13 +48,18 @@ def load_config(cwd: Path | None = None) -> dict[str, Any]:
         with Path(config_path).open("rb") as f:
             daffy_config = tomli.load(f).get("tool", {}).get("daffy", {})
 
-        for key in _BOOL_KEYS:
-            if (value := _validate_bool_config(daffy_config, key)) is not None:
-                config[key] = value
-
-        for key in _INT_KEYS:
-            if (value := _validate_int_config(daffy_config, key)) is not None:
-                config[key] = value
+        for key, default_value in _DEFAULTS.items():
+            if key in daffy_config:
+                val = daffy_config[key]
+                if isinstance(default_value, bool):
+                    if not isinstance(val, bool):
+                        raise TypeError(f"Config '{key}' must be a boolean, got {type(val).__name__}: {val!r}")
+                else:  # isinstance(default_value, int)
+                    if not isinstance(val, int) or isinstance(val, bool):
+                        raise TypeError(f"Config '{key}' must be an integer, got {type(val).__name__}: {val!r}")
+                    if val < 1:
+                        raise ValueError(f"Config '{key}' must be >= 1, got {val}")
+                config[key] = val
     except (FileNotFoundError, tomli.TOMLDecodeError):
         pass
 

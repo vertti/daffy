@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.8.0
+
+### Changed
+
+- Significant runtime performance improvements to minimize decorator overhead
+  - Eliminated repetitive Python introspection (`inspect.signature`) from the execution path by resolving parameters during decoration
+  - Vectorized validation checks (`nullable` and `unique`) across multiple columns simultaneously using Narwhals expression API (`.select()`)
+  - Avoided redundant dataframe wrappers when running value checks
+  - Optimized the validation builder for faster pipeline setup and eliminated unused dtype resolution overhead
+
 ## 2.7.0
 
 ### Added

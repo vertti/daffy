@@ -6,7 +6,7 @@ import polars as pl
 import pytest
 
 from daffy import df_in
-from daffy.utils import get_parameter_name
+from daffy.utils import ParameterResolver
 from tests.conftest import IntoDataFrame, cars, extended_cars
 
 
@@ -439,7 +439,7 @@ def test_get_parameter_name_returns_none_when_no_params() -> None:
     def func_with_no_params() -> None:
         pass
 
-    result = get_parameter_name(func_with_no_params, None)
+    result = ParameterResolver(func_with_no_params).resolve(None)[1]
     assert result is None
 
 
@@ -447,7 +447,7 @@ def test_get_parameter_name_returns_none_when_no_args_or_kwargs() -> None:
     def some_func(param: str) -> str:
         return param
 
-    result = get_parameter_name(some_func, None)
+    result = ParameterResolver(some_func).resolve(None)[1]
     assert result is None
 
 

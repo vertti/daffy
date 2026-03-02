@@ -31,111 +31,73 @@ def assert_is_dataframe(obj: Any, context: str) -> None:
         raise AssertionError(f"Wrong {context}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead.")
 
 
-def get_parameter(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> Any:
-    """Extract a parameter value from function arguments.
+class ParameterResolver:
+    """Efficiently resolves parameter values from function arguments without repeated introspection."""
 
-    Args:
-        func: The function whose parameters to inspect
-        name: Name of the parameter to extract. If None, the function first attempts to
-            find and return a DataFrame-like argument; if no DataFrame-like argument is
-            found, it falls back to returning the first positional arg or kwarg.
-        *args: Positional arguments passed to the function
-        **kwargs: Keyword arguments passed to the function
+    def __init__(self, func: Callable[..., Any]) -> None:
+        sig = inspect.signature(func)
+        self.params = list(sig.parameters.values())
+        self.param_names = [p.name for p in self.params]
 
-    Returns:
-        The value of the requested parameter
+        # Precompute lists for faster lookup during resolve
+        self.param_kinds = [p.kind for p in self.params]
+        self.param_defaults = [p.default for p in self.params]
 
-    Raises:
-        ValueError: If the named parameter cannot be found in args or kwargs
+        self.var_pos_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_POSITIONAL), None)
+        self.var_kw_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_KEYWORD), None)
 
-    """
-    if not name:
-        first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
-        if first_dataframe_arg is not None:
-            return first_dataframe_arg[0]
+    def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None]:  # noqa: C901, PLR0911, PLR0912
+        """Extract a parameter value and its name from function arguments."""
+        if not name:
+            # 1. Search positional arguments
+            for i, arg in enumerate(args):
+                if is_supported_dataframe(arg):
+                    if i < len(self.param_names):
+                        return arg, self.param_names[i]
+                    return arg, self.var_pos_name
 
-        # Keep existing fallback behavior when no DataFrame-like argument is present.
-        return args[0] if args else next(iter(kwargs.values()), None)
+            # 2. Search keyword arguments
+            for kw_name, kw_val in kwargs.items():
+                if is_supported_dataframe(kw_val):
+                    # If it's explicitly in the signature, return that name.
+                    # Otherwise, if it's passed as kwargs but VAR_KEYWORD exists, return kw_name.
+                    return kw_val, kw_name
 
-    if name in kwargs:
-        return kwargs[name]
-
-    func_params_in_order = list(inspect.signature(func).parameters.keys())
-
-    if name not in func_params_in_order:
-        raise ValueError(f"Parameter '{name}' not found in function signature. Available: {func_params_in_order}")
-
-    parameter_location = func_params_in_order.index(name)
-
-    if parameter_location >= len(args):
-        raise ValueError(
-            f"Parameter '{name}' not found in function arguments. "
-            f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
-        )
-
-    return args[parameter_location]
-
-
-def get_parameter_name(func: Callable[..., Any], name: str | None = None, *args: Any, **kwargs: Any) -> str | None:
-    """Resolve the effective parameter name used for validation.
-
-    Resolution order:
-    1. Return the explicit ``name`` argument when provided.
-    2. Find the first DataFrame-like argument via ``_find_first_dataframe_argument``.
-    3. Fall back to the first positional parameter name if positional args were provided.
-    4. Fall back to the first keyword argument name.
-
-    Args:
-        func: The function whose parameters to inspect.
-        name: Explicit parameter name to use, or ``None`` for automatic resolution.
-        *args: Positional arguments passed to the function.
-        **kwargs: Keyword arguments passed to the function.
-
-    Returns:
-        The resolved parameter name, or ``None`` when no name can be determined.
-
-    """
-    if name:
-        return name
-
-    first_dataframe_arg = _find_first_dataframe_argument(func, *args, **kwargs)
-    if first_dataframe_arg is not None:
-        return first_dataframe_arg[1]
-
-    if args:
-        func_params_in_order = list(inspect.signature(func).parameters.keys())
-        return func_params_in_order[0]
-
-    return next(iter(kwargs.keys()), None)
-
-
-def _find_first_dataframe_argument(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[Any, str] | None:
-    """Find the first DataFrame-like argument using function signature order."""
-    sig = inspect.signature(func)
-    bound_args = sig.bind_partial(*args, **kwargs)
-
-    for param_name, param in sig.parameters.items():
-        if param_name not in bound_args.arguments:
-            continue
-
-        value = bound_args.arguments[param_name]
-
-        if param.kind is inspect.Parameter.VAR_POSITIONAL:
-            for item in value:
-                if is_supported_dataframe(item):
-                    return item, param_name
-            continue
-
-        if param.kind is inspect.Parameter.VAR_KEYWORD:
-            for kwarg_name, kwarg_value in value.items():
-                if is_supported_dataframe(kwarg_value):
-                    return kwarg_value, kwarg_name
-            continue
-
-        if is_supported_dataframe(value):
+            # 3. Fallback to first argument if no dataframe found
+            value = args[0] if args else next(iter(kwargs.values()), None)
+            if args:
+                param_name = self.param_names[0] if self.param_names else None
+            else:
+                param_name = next(iter(kwargs.keys()), None)
             return value, param_name
 
-    return None
+        if name in kwargs:
+            return kwargs[name], name
+
+        try:
+            parameter_location = self.param_names.index(name)
+        except ValueError:
+            raise ValueError(
+                f"Parameter '{name}' not found in function signature. Available: {self.param_names}"
+            ) from None
+
+        kind = self.param_kinds[parameter_location]
+        default = self.param_defaults[parameter_location]
+
+        if kind == inspect.Parameter.KEYWORD_ONLY:
+            if default is not inspect.Parameter.empty:
+                return default, name
+            raise ValueError(f"Required keyword-only parameter '{name}' not provided in arguments.")
+
+        if parameter_location >= len(args):
+            if default is not inspect.Parameter.empty:
+                return default, name
+            raise ValueError(
+                f"Parameter '{name}' not found in function arguments. "
+                f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
+            )
+
+        return args[parameter_location], name
 
 
 def describe_dataframe(df: Any, include_dtypes: bool = False) -> str:
