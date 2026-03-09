@@ -18,7 +18,8 @@
         "coverage",
         "pytest-cov",
         "pre-commit"
-      ]
+      ],
+      "automerge": true
     },
     {
       "groupName": "test-dependencies",
@@ -35,7 +36,8 @@
     },
     {
       "groupName": "github-actions",
-      "matchManagers": ["github-actions"]
+      "matchManagers": ["github-actions"],
+      "automerge": true
     }
   ]
 }
