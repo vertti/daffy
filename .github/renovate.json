@@ -10,7 +10,7 @@
   "packageRules": [
     {
       "groupName": "dev-dependencies",
-      "matchManagers": ["pep621"],
+      "matchManagers": ["poetry"],
       "matchDepNames": [
         "ruff",
         "pyrefly",
@@ -22,8 +22,14 @@
       "automerge": true
     },
     {
+      "groupName": "dev-dependencies",
+      "matchManagers": ["mise"],
+      "matchDepNames": ["uv"],
+      "automerge": true
+    },
+    {
       "groupName": "test-dependencies",
-      "matchManagers": ["pep621"],
+      "matchManagers": ["poetry"],
       "matchDepNames": [
         "pytest",
         "pytest-mock",
