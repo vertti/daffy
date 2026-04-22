@@ -135,6 +135,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Skylos cache
+.skylos/
+
 # pytype static type analyzer
 .pytype/
 

@@ -52,6 +52,7 @@ jobs:
           uv run ruff format --diff
           uv run pyrefly check .
           uv run vulture daffy --min-confidence 100
+          uv run skylos . --gate --strict --no-upload
           dprint check
 
   # Coverage on latest Python only

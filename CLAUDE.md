@@ -50,6 +50,7 @@ uv run pytest --cov
 uv run ruff check .
 uv run ruff format --check .
 uv run pyrefly check .
+uv run skylos . --gate --strict --no-upload
 ```
 
 Notes:
