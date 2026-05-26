@@ -63,7 +63,7 @@ dev = [
     "pyrefly==1.0.0",
     "skylos==4.18.0",
     "vulture==2.16",
-    "coverage[toml]==7.14.0",
+    "coverage[toml]==7.14.1",
     "pytest-cov==7.1.0",
     "pre-commit==4.6.0",
     "zensical==0.0.43",
