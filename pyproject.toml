@@ -59,7 +59,7 @@ test = [
 
 # Development tools - pinned for dependabot updates
 dev = [
-    "ruff==0.15.16",
+    "ruff==0.15.17",
     "pyrefly==1.0.0",
     "skylos==4.24.1",
     "vulture==2.16",
