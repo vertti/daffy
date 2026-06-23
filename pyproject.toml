@@ -66,7 +66,7 @@ dev = [
     "coverage[toml]==7.14.3",
     "pytest-cov==7.1.0",
     "pre-commit==4.6.0",
-    "zensical==0.0.45",
+    "zensical==0.0.46",
 ]
 
 [build-system]
