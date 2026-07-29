@@ -12,7 +12,7 @@ class TestCustomCheckFunctions:
         series = pd.Series([1, 2, 3, 4, 5])
         fail_count, samples = apply_check(series, "positive", lambda s: s > 0)
         assert fail_count == 0
-        assert samples == []
+        assert not samples
 
     def test_custom_check_fails(self) -> None:
         series = pd.Series([1, -2, 3, -4, 5])
@@ -36,7 +36,7 @@ class TestCustomCheckFunctions:
         series = pd.Series([], dtype=float)
         fail_count, samples = apply_check(series, "positive", lambda s: s > 0)
         assert fail_count == 0
-        assert samples == []
+        assert not samples
 
     def test_custom_check_with_nulls_treated_as_failure(self) -> None:
         series = pd.Series([1, None, 3])

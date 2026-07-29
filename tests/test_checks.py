@@ -12,7 +12,7 @@ class TestComparisonChecks:
         series = pd.Series([1, 2, 3])
         fail_count, samples = apply_check(series, "gt", 0)
         assert fail_count == 0
-        assert samples == []
+        assert not samples
 
     def test_gt_fails(self) -> None:
         series = pd.Series([0, 1, 2, 3])
@@ -301,13 +301,13 @@ class TestEdgeCases:
         series = pd.Series([], dtype=float)
         fail_count, samples = apply_check(series, "gt", 0)
         assert fail_count == 0
-        assert samples == []
+        assert not samples
 
     def test_single_value_passes(self) -> None:
         series = pd.Series([5])
         fail_count, samples = apply_check(series, "gt", 0)
         assert fail_count == 0
-        assert samples == []
+        assert not samples
 
     def test_single_value_fails(self) -> None:
         series = pd.Series([-1])
@@ -332,7 +332,7 @@ class TestValidateChecks:
 
         nws = nw.from_native(df, eager_only=True)["price"]
         violations = validate_checks(nws, "price", {"gt": 0})
-        assert violations == []
+        assert not violations
 
     def test_single_check_fails(self) -> None:
         df = pd.DataFrame({"price": [0, 1, 2]})
@@ -351,7 +351,7 @@ class TestValidateChecks:
 
         nws = nw.from_native(df, eager_only=True)["score"]
         violations = validate_checks(nws, "score", {"gt": 0, "lt": 100})
-        assert violations == []
+        assert not violations
 
     def test_multiple_checks_one_fails(self) -> None:
         df = pd.DataFrame({"score": [50, 60, 150]})

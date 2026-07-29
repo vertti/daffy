@@ -102,7 +102,7 @@ class TestCheckBoundaryInvariants:
         ]:
             fail_count, samples = apply_check(empty_series, check_name, check_value)
             assert fail_count == 0
-            assert samples == []
+            assert not samples
 
     @given(
         n_failures=st.integers(min_value=10, max_value=100),

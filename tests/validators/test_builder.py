@@ -34,7 +34,7 @@ class TestBuildValidationPipeline:
             df_columns=["a", "b"],
         )
 
-        assert len(pipeline) == 0
+        assert not pipeline
 
     def test_adds_shape_validator_for_min_rows(self) -> None:
         pipeline = build_validation_pipeline(

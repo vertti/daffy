@@ -16,7 +16,7 @@ class TestColumnsExistValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1], "b": [2]}))
         validator = ColumnsExistValidator(missing_columns=[], available_columns=["a", "b"])
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_when_columns_missing(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
@@ -43,7 +43,7 @@ class TestDtypeValidator:
         expected_dtype = ctx.get_dtype("a")
         validator = DtypeValidator({"a": expected_dtype})
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_when_dtype_mismatch(self) -> None:
         df = pd.DataFrame({"a": [1, 2, 3]})
@@ -58,7 +58,7 @@ class TestDtypeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
         validator = DtypeValidator({"nonexistent": "int64"})
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
 
 class TestNullableValidator:
@@ -66,7 +66,7 @@ class TestNullableValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3]}))
         validator = NullableValidator(["a"])
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_when_nulls_present(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, None, 3]}))
@@ -88,7 +88,7 @@ class TestNullableValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
         validator = NullableValidator(["nonexistent"])
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_multiple_columns(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [None], "b": [None]}))
@@ -106,7 +106,7 @@ class TestStrictModeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1], "b": [2]}))
         validator = StrictModeValidator({"a", "b"})
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_when_extra_columns(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1], "b": [2], "c": [3]}))
@@ -121,4 +121,4 @@ class TestStrictModeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
         validator = StrictModeValidator({"a", "b", "c"})
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)

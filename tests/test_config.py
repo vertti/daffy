@@ -7,7 +7,13 @@ from unittest.mock import patch
 
 import pytest
 
-from daffy.config import clear_config_cache, get_checks_max_samples, get_config, get_strict, get_strict_specs
+from daffy.config import (
+    clear_config_cache,
+    get_checks_max_samples,
+    get_config,
+    get_strict,
+    get_strict_specs,
+)
 
 
 def test_get_config_default() -> None:
@@ -57,7 +63,7 @@ def test_config_from_pyproject() -> None:
     """Test loading configuration from pyproject.toml."""
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create a mock pyproject.toml file
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 strict = true
@@ -76,7 +82,7 @@ strict = true
 def test_strict_specs_from_pyproject() -> None:
     """Verify strict_specs value is read from pyproject config."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 strict_specs = true
@@ -93,7 +99,7 @@ strict_specs = true
 def test_config_strict_specs_string_raises_error() -> None:
     """Test that non-boolean strict_specs config raises TypeError."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 strict_specs = "true"
@@ -118,7 +124,7 @@ def test_load_config_returns_default_when_file_not_found() -> None:
 
 def test_load_config_returns_default_when_toml_malformed() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("invalid toml [[[")
 
         with patch("daffy.config.Path.cwd", return_value=Path(tmpdir)):
@@ -172,7 +178,7 @@ def test_find_config_file_prefers_nearest_parent() -> None:
 
 def test_load_config_without_strict_setting() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 other_setting = "value"
@@ -187,7 +193,7 @@ other_setting = "value"
 
 def test_load_config_daffy_section_without_strict() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 some_other_setting = "value"
@@ -212,7 +218,7 @@ def test_get_checks_max_samples_override() -> None:
 
 def test_checks_max_samples_from_pyproject() -> None:
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 checks_max_samples = 10
@@ -230,7 +236,7 @@ checks_max_samples = 10
 def test_config_strict_string_raises_error() -> None:
     """Test that non-boolean strict config raises TypeError."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 strict = "false"
@@ -250,7 +256,7 @@ strict = "false"
 def test_config_max_samples_string_raises_error() -> None:
     """Test that non-integer max_samples config raises TypeError."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 checks_max_samples = "five"
@@ -270,7 +276,7 @@ checks_max_samples = "five"
 def test_config_max_samples_zero_raises_error() -> None:
     """Test that max_samples < 1 raises ValueError."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 checks_max_samples = 0
@@ -290,7 +296,7 @@ checks_max_samples = 0
 def test_config_max_samples_one_passes() -> None:
     """Test that max_samples = 1 is valid (boundary value)."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 checks_max_samples = 1
@@ -308,7 +314,7 @@ checks_max_samples = 1
 def test_config_row_validation_max_errors_one_passes() -> None:
     """Test that row_validation_max_errors = 1 is valid (boundary value)."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 row_validation_max_errors = 1
@@ -326,7 +332,7 @@ row_validation_max_errors = 1
 def test_config_row_validation_max_errors_zero_raises_error() -> None:
     """Test that row_validation_max_errors < 1 raises ValueError."""
     with tempfile.TemporaryDirectory() as tmpdir:
-        with open(os.path.join(tmpdir, "pyproject.toml"), "w") as f:
+        with Path(os.path.join(tmpdir, "pyproject.toml")).open("w") as f:
             f.write("""
 [tool.daffy]
 row_validation_max_errors = 0

@@ -11,13 +11,13 @@ class TestShapeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3]}))
         validator = ShapeValidator()
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_passes_min_rows(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3]}))
         validator = ShapeValidator(min_rows=2)
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_min_rows(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
@@ -31,7 +31,7 @@ class TestShapeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3]}))
         validator = ShapeValidator(max_rows=10)
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_max_rows(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3, 4, 5]}))
@@ -45,7 +45,7 @@ class TestShapeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2, 3]}))
         validator = ShapeValidator(exact_rows=3)
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_exact_rows(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": [1, 2]}))
@@ -59,7 +59,7 @@ class TestShapeValidator:
         ctx = ValidationContext(df=pd.DataFrame({"a": []}))
         validator = ShapeValidator(allow_empty=True)
 
-        assert validator.validate(ctx) == []
+        assert not validator.validate(ctx)
 
     def test_fails_allow_empty_false(self) -> None:
         ctx = ValidationContext(df=pd.DataFrame({"a": []}))

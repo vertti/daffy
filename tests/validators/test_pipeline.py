@@ -84,7 +84,7 @@ class TestValidationPipeline:
 
     def test_len_returns_validator_count(self) -> None:
         pipeline = ValidationPipeline()
-        assert len(pipeline) == 0
+        assert not pipeline
 
         pipeline.add(AlwaysPassValidator())
         assert len(pipeline) == 1
