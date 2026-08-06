@@ -117,6 +117,11 @@ testpaths = ["tests"]
 line-length = 120
 target-version = "py310"
 
+[tool.ruff.format]
+# Ruff 0.16 formats Python inside Markdown code fences; docs examples are laid out
+# for readability and Markdown formatting is dprint's job.
+exclude = ["*.md"]
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
@@ -151,6 +156,8 @@ ignore = [
     # Other noisy rules
     "PLR2004", # Magic value in comparison - too many false positives
     "PLR0913", # Too many arguments - unavoidable for decorator APIs
+    "PLR0917", # Too many positional arguments - same reason as PLR0913
+    "CPY001",  # Missing copyright notice - license lives in LICENSE, not per-file headers
 ]
 
 [tool.ruff.lint.per-file-ignores]
