@@ -215,6 +215,12 @@ Available built-in checks for the `checks` parameter:
 
 Custom checks are also supported by passing a callable as the check value.
 
+`str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
+yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
+
+Nulls count as failures for every check. A null in a checked column is reported as a violation
+rather than skipped, on all supported backends.
+
 **Examples:**
 
 ```python

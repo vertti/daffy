@@ -102,7 +102,7 @@ def apply_check(series_or_nws: Any, check_name: str, check_value: Any, max_sampl
         "isin": lambda: _failing_mask(nws.is_in(check_value)),
         "notin": lambda: nws.is_in(check_value),
         "notnull": lambda: nws.is_null(),  # noqa: PLW0108
-        "str_regex": lambda: _failing_mask(nws.str.contains(f"^(?:{check_value})")),
+        "str_regex": lambda: _failing_mask(nws.str.contains(check_value)),
         "str_startswith": lambda: _failing_mask(nws.str.starts_with(check_value)),
         "str_endswith": lambda: _failing_mask(nws.str.ends_with(check_value)),
         "str_contains": lambda: _failing_mask(nws.str.contains(check_value, literal=True)),

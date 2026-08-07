@@ -206,6 +206,30 @@ class TestStrRegexCheck:
         assert fail_count == 1
         assert samples == ["invalid"]
 
+    def test_str_regex_matches_anywhere_in_the_value(self) -> None:
+        series = pd.Series(["abc123", "abc"])
+        fail_count, samples = apply_check(series, "str_regex", r"\d+")
+        assert fail_count == 1
+        assert samples == ["abc"]
+
+    def test_str_regex_honours_caller_start_anchor(self) -> None:
+        series = pd.Series(["123abc", "abc123"])
+        fail_count, samples = apply_check(series, "str_regex", r"^\d+")
+        assert fail_count == 1
+        assert samples == ["abc123"]
+
+    def test_str_regex_honours_caller_full_match_anchors(self) -> None:
+        series = pd.Series(["123", "123abc"])
+        fail_count, samples = apply_check(series, "str_regex", r"^\d+$")
+        assert fail_count == 1
+        assert samples == ["123abc"]
+
+    def test_str_regex_alternation_is_not_rewritten(self) -> None:
+        series = pd.Series(["xb", "c"])
+        fail_count, samples = apply_check(series, "str_regex", "a|b")
+        assert fail_count == 1
+        assert samples == ["c"]
+
 
 class TestStrStartswithCheck:
     def test_str_startswith_passes(self) -> None:

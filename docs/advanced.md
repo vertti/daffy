@@ -310,6 +310,12 @@ def process_data(df):
 | `str_contains`   | string     | String contains substring  | `{"str_contains": "@"}`      |
 | `str_length`     | (min, max) | String length in range     | `{"str_length": (1, 100)}`   |
 
+`str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
+yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
+
+Nulls count as failures for every check. A null in a checked column is reported as a violation
+rather than skipped, on all supported backends.
+
 ### Multiple Checks
 
 You can combine multiple checks on a single column:

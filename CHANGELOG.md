@@ -4,9 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Changed
+
+- **Behavior change:** `str_regex` now applies the pattern as written instead of silently anchoring it at the start of the value. `{"str_regex": r"\d+"}` used to mean "starts with digits" and now means "contains digits"; add the anchor yourself (`r"^\d+"`, or `r"^\d+$"` for a full match) to keep the old meaning. Patterns that were already anchored are unaffected.
+
 ### Fixed
 
 - String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls; the null is reported as a check failure like on every other backend
+
+### Documentation
+
+- Documented `str_regex` anchoring (the caller's pattern is applied as written) and that nulls count as failures for every check
 
 ## 2.8.0
 
