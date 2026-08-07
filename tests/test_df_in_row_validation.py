@@ -174,3 +174,15 @@ class TestValidatorConstructorArguments:
 
         assert len(errors) == 1
         assert "Examples: [-1, -1]" in errors[0], "config default is 5, so the argument must win"
+
+
+def test_row_validator_without_early_termination_counts_every_failure() -> None:
+    """With early_termination off the loop runs to the end, so the remainder is exact."""
+    from daffy.validators.context import ValidationContext
+    from daffy.validators.rows import RowValidator
+
+    ctx = ValidationContext(df=pd.DataFrame({"v": ["x"] * 8}))
+    errors = RowValidator(PersonValidator, max_errors=2, early_termination=False).validate(ctx)
+
+    assert errors[0].startswith("Row validation failed for 8 out of 8 rows")
+    assert "... and 6 more row(s) with errors" in errors[0]

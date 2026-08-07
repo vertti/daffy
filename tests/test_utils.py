@@ -156,3 +156,11 @@ class TestParameterNamesPastVarargs:
 
         with pytest.raises(AssertionError, match=r"parameter 'frames'"):
             process(1, pd.DataFrame({"x": [1]}))
+
+
+def test_describe_dataframe_rejects_a_non_dataframe() -> None:
+    from daffy.narwhals_compat import UnsupportedDataFrameError
+    from daffy.utils import describe_dataframe
+
+    with pytest.raises(UnsupportedDataFrameError, match="not a supported DataFrame, got str"):
+        describe_dataframe("not a frame")
