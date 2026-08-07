@@ -343,3 +343,16 @@ def test_get_config_uses_cache_for_same_cwd(tmp_path: Path) -> None:
 def test_get_int_config_invalid_override() -> None:
     with pytest.raises(ValueError, match="must be >="):
         get_checks_max_samples(0)
+
+
+def test_boolean_is_not_accepted_for_an_integer_setting(tmp_path: Path) -> None:
+    """Bool is a subclass of int, so the loader guards against it explicitly."""
+    write_pyproject(tmp_path, "row_validation_max_errors = true")
+
+    with patch("daffy.config.Path.cwd", return_value=tmp_path):
+        from daffy.config import load_config
+
+        clear_config_cache()
+
+        with pytest.raises(TypeError, match="must be an integer, got bool"):
+            load_config()

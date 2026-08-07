@@ -149,3 +149,28 @@ class TestMaxErrorsBoundary:
         message = self._run_with_bad_rows(10000)
         assert "and 1 more row(s)" not in message
         assert "more rows may have errors" in message
+
+
+class TestValidatorConstructorArguments:
+    """RowValidator and ChecksValidator advertise these, but nothing ever passed them."""
+
+    def test_row_validator_max_errors_overrides_config(self) -> None:
+        from daffy.validators.context import ValidationContext
+        from daffy.validators.rows import RowValidator
+
+        ctx = ValidationContext(df=pd.DataFrame({"v": ["x"] * 8}))
+        errors = RowValidator(PersonValidator, max_errors=2).validate(ctx)
+
+        assert len(errors) == 1
+        assert errors[0].count("  Row ") == 2, "config default is 5, so the argument must win"
+        assert errors[0].startswith("Row validation failed for at least 3 out of 8 rows")
+
+    def test_checks_validator_max_samples_overrides_config(self) -> None:
+        from daffy.validators.checks import ChecksValidator
+        from daffy.validators.context import ValidationContext
+
+        ctx = ValidationContext(df=pd.DataFrame({"v": [-1] * 10}))
+        errors = ChecksValidator({"v": {"gt": 0}}, max_samples=2).validate(ctx)
+
+        assert len(errors) == 1
+        assert "Examples: [-1, -1]" in errors[0], "config default is 5, so the argument must win"

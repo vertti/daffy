@@ -224,3 +224,29 @@ class TestLazyValidationErrorMessages:
         # Each error type should be on its own line(s)
         lines = error.split("\n\n")
         assert len(lines) == 3  # missing, nullable, unique
+
+
+class TestLazyCollectsEveryErrorFromOneValidator:
+    """Lazy mode was only ever exercised across different validators, never within one."""
+
+    def test_all_dtype_mismatches_are_reported(self) -> None:
+        @df_in({"a": "int64", "b": "int64", "c": "int64"}, lazy=True)
+        def process(df: Any) -> Any:
+            return df
+
+        with pytest.raises(AssertionError) as exc_info:
+            process(pd.DataFrame({"a": ["x"], "b": ["y"], "c": ["z"]}))
+
+        message = str(exc_info.value)
+        for column in ("a", "b", "c"):
+            assert f"Column {column}" in message
+
+    def test_eager_mode_reports_the_first_failing_validator(self) -> None:
+        """Shape runs before columns, so an empty frame reports allow_empty, not min_rows."""
+
+        @df_in(exact_rows=9, min_rows=5, allow_empty=False)
+        def process(df: Any) -> Any:
+            return df
+
+        with pytest.raises(AssertionError, match="allow_empty=False"):
+            process(pd.DataFrame({"a": []}))
