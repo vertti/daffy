@@ -131,6 +131,27 @@ def test_in_strict_extra_columns(df: IntoDataFrame) -> None:
     assert "DataFrame in function 'test_fn' parameter '_df' contained unexpected column(s): Price" in str(excinfo.value)
 
 
+@pytest.mark.parametrize("df", [pd.DataFrame(cars), pl.DataFrame(cars)])
+def test_in_strict_accepts_regex_matched_columns(df: IntoDataFrame) -> None:
+    """Columns matched by a regex pattern are allowed under strict mode."""
+
+    @df_in(columns=["Brand", r"r/^Price$/"], strict=True)
+    def test_fn(_df: IntoDataFrame) -> IntoDataFrame:
+        return _df
+
+    assert test_fn(df) is df
+
+
+@pytest.mark.parametrize("df", [pd.DataFrame(extended_cars), pl.DataFrame(extended_cars)])
+def test_in_strict_still_rejects_columns_no_pattern_matches(df: IntoDataFrame) -> None:
+    @df_in(columns=["Brand", r"r/^Price$/"], strict=True)
+    def test_fn(_df: IntoDataFrame) -> IntoDataFrame:
+        return _df
+
+    with pytest.raises(AssertionError, match="unexpected column\\(s\\): Year"):
+        test_fn(df)
+
+
 def test_correct_input_with_columns_and_dtypes_pandas(basic_pandas_df: pd.DataFrame) -> None:
     @df_in(columns={"Brand": "object", "Price": "int64"})
     def test_fn(my_input: Any) -> Any:

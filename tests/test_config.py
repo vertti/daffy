@@ -176,6 +176,22 @@ def test_get_checks_max_samples_default() -> None:
         assert get_checks_max_samples() == 5
 
 
+def test_shipped_defaults(tmp_path: Path) -> None:
+    """The defaults applied when no pyproject configures daffy."""
+    with patch("daffy.config.Path.cwd", return_value=tmp_path):
+        clear_config_cache()
+        config = get_config()
+
+    assert config == {
+        "strict": False,
+        "lazy": False,
+        "strict_specs": False,
+        "row_validation_max_errors": 5,
+        "checks_max_samples": 5,
+        "allow_empty": True,
+    }
+
+
 def test_get_checks_max_samples_override() -> None:
     with patch("daffy.config.get_config", return_value={"checks_max_samples": 5}):
         assert get_checks_max_samples(10) == 10
