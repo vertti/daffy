@@ -231,6 +231,11 @@ Custom checks are also supported by passing a callable as the check value.
 `str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
 yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
 
+The pattern is handed to the DataFrame library's own regex engine, so advanced syntax is not
+portable. Lookarounds and backreferences work on Pandas (Python `re`) but raise `ComputeError` on
+Polars and `ArrowInvalid` on PyArrow. Stick to basic syntax if your code runs on more than one
+backend.
+
 Checks constrain values, and a null is not a value. Daffy does not rewrite null comparison
 results, so null handling follows your backend: on Polars, PyArrow and Pandas nullable dtypes
 a comparison against null is "unknown" and is not reported, while Pandas float `NaN` compares
