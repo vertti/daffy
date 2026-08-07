@@ -87,7 +87,7 @@ parameter 'df'. Got columns: ['name', 'price']
 ```
 
 ```
-AssertionError: Column 'price' in function 'process_orders' parameter 'df'
+AssertionError: Column price in function 'process_orders' parameter 'df'
 has wrong dtype. Was int64, expected float64
 ```
 

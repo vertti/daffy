@@ -168,9 +168,9 @@ strict = true
 
 Full documentation available at **[daffy.readthedocs.io](https://daffy.readthedocs.io)**
 
-- [Getting Started](https://daffy.readthedocs.io/getting-started/) — quick introduction
-- [Usage Guide](https://daffy.readthedocs.io/usage/) — comprehensive reference
-- [API Reference](https://daffy.readthedocs.io/api/) — decorator signatures
+- [Getting Started](https://daffy.readthedocs.io/en/latest/getting-started/) — quick introduction
+- [Usage Guide](https://daffy.readthedocs.io/en/latest/usage/) — comprehensive reference
+- [API Reference](https://daffy.readthedocs.io/en/latest/api/) — decorator signatures
 - [Changelog](https://github.com/vertti/daffy/blob/master/CHANGELOG.md) — version history
 
 ---

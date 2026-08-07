@@ -9,7 +9,7 @@ You can use regex patterns to match column names that follow a specific pattern.
 Define a regex pattern by using the format `"r/pattern/"`:
 
 ```python
-@df_in(["Brand", "r/Price_\d+/"])
+@df_in(["Brand", r"r/Price_\d+/"])
 def process_data(df):
     # This will accept DataFrames with columns like "Brand", "Price_1", "Price_2", etc.
     ...
@@ -37,7 +37,7 @@ Regex patterns are also considered in strict mode. Any column matching a regex p
 You can use regex patterns in dictionaries that specify data types as well:
 
 ```python
-@df_in({"Brand": "object", "r/Price_\d+/": "int64"})
+@df_in({"Brand": "object", r"r/Price_\d+/": "int64"})
 def process_data(df):
     # This will check that all columns matching "Price_\d+" have int64 dtype
     ...
@@ -401,7 +401,7 @@ def process_data(df):
 The dictionary key becomes the check name in error messages:
 
 ```
-AssertionError: Column 'price' failed check 'no_outliers': 3 values failed. Examples: [50000, 99999]
+AssertionError: Column 'price' in function 'process_data' parameter 'df' failed check no_outliers: 3 values failed. Examples: [50000.0, 99999.0, 99999.0]
 ```
 
 Custom checks can use any Narwhals Series operations:
@@ -513,7 +513,7 @@ Row validation includes an early termination optimization. When validation error
 
 For example, validating 100k rows with early errors takes ~1.2ms instead of ~140ms.
 
-This optimization is enabled by default. Error messages will show "X out of Y+ rows" when early termination occurs, indicating there may be additional errors beyond those displayed.
+This optimization is enabled by default. Error messages read `Row validation failed for at least N out of M rows` when early termination occurs, and say that counting stopped rather than reporting a specific remainder, indicating there may be additional errors beyond those displayed.
 
 ### Advanced Features
 
@@ -561,9 +561,9 @@ When multiple validations fail, the error message includes all issues:
 ```
 Missing columns: ['category'] in function 'process_order' parameter 'df'. Got columns: ['price', 'quantity']
 
-Column 'price' contains 2 null values but nullable=False
+Column 'price' in function 'process_order' parameter 'df' contains 2 null values but nullable=False
 
-Column 'quantity' failed check gt: 1 values failed. Examples: [-5]
+Column 'quantity' in function 'process_order' parameter 'df' failed check gt: 1 values failed. Examples: [-5]
 ```
 
 This is useful for debugging when a DataFrame has multiple issues.
@@ -577,9 +577,25 @@ All configuration options can be set in `pyproject.toml`:
 strict = true                    # Enable strict mode by default
 lazy = true                      # Collect all errors before raising (default: false)
 allow_empty = false              # Reject empty DataFrames by default (default: true)
+strict_specs = true              # Raise TypeError on invalid column keys or spec types (default: false)
 row_validation_max_errors = 5    # Max failed rows to show (default: 5)
 checks_max_samples = 5           # Max sample values in check errors (default: 5)
 ```
+
+### strict_specs
+
+By default, a column key that is not a string or regex pattern is skipped. With
+`strict_specs = true` it raises `TypeError` instead:
+
+```python
+@df_in({"price": "float64", 123: "int64"})   # the 123 key is ignored by default
+def process_data(df):
+    ...
+```
+
+This covers the _shape_ of a spec. Misspelled constraint names (`{"nullabel": False}`), non-boolean
+constraint values (`{"nullable": "False"}`) and unknown check names (`{"checks": {"gtt": 0}}`) are
+always rejected when the decorator is applied, regardless of this setting.
 
 ### allow_empty
 
