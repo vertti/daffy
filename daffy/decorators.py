@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from functools import wraps
-from typing import TYPE_CHECKING, Any, TypeVar, overload
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -87,7 +87,12 @@ def _validate_shape_constraints(
         raise ValueError(f"min_rows ({min_rows}) cannot be greater than max_rows ({max_rows})")
 
 
-# Type variables for preserving return types
+# Type variables for preserving signatures. ParamSpec keeps the decorated function's
+# parameters visible to type checkers - with a bare `...` every call site of a
+# decorated function silently loses argument checking.
+LogParams = ParamSpec("LogParams")
+InParams = ParamSpec("InParams")
+OutParams = ParamSpec("OutParams")
 LogReturnT = TypeVar("LogReturnT")  # Return type for df_log
 InReturnT = TypeVar("InReturnT")  # Return type for df_in
 
@@ -144,7 +149,7 @@ def df_out(
     max_rows: int | None = None,
     exact_rows: int | None = None,
     allow_empty: bool | None = None,
-) -> Callable[[Callable[..., IntoDataFrameT]], Callable[..., IntoDataFrameT]]:
+) -> Callable[[Callable[OutParams, IntoDataFrameT]], Callable[OutParams, IntoDataFrameT]]:
     """Decorate a function that returns a DataFrame (Pandas, Polars, Modin, or PyArrow).
 
     Document the return value of a function. The return value will be validated in runtime.
@@ -181,9 +186,9 @@ def df_out(
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
-    def wrapper_df_out(func: Callable[..., IntoDataFrameT]) -> Callable[..., IntoDataFrameT]:
+    def wrapper_df_out(func: Callable[OutParams, IntoDataFrameT]) -> Callable[OutParams, IntoDataFrameT]:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> IntoDataFrameT:
+        def wrapper(*args: OutParams.args, **kwargs: OutParams.kwargs) -> IntoDataFrameT:
             result = func(*args, **kwargs)
             nw_df = assert_is_dataframe(result, "return type")
             _run_validations(
@@ -222,7 +227,7 @@ def df_in(
     max_rows: int | None = ...,
     exact_rows: int | None = ...,
     allow_empty: bool | None = ...,
-) -> Callable[[Callable[..., InReturnT]], Callable[..., InReturnT]]: ...
+) -> Callable[[Callable[InParams, InReturnT]], Callable[InParams, InReturnT]]: ...
 
 
 @overload
@@ -237,7 +242,7 @@ def df_in(
     max_rows: int | None = ...,
     exact_rows: int | None = ...,
     allow_empty: bool | None = ...,
-) -> Callable[[Callable[..., InReturnT]], Callable[..., InReturnT]]: ...
+) -> Callable[[Callable[InParams, InReturnT]], Callable[InParams, InReturnT]]: ...
 
 
 def df_in(
@@ -251,7 +256,7 @@ def df_in(
     max_rows: int | None = None,
     exact_rows: int | None = None,
     allow_empty: bool | None = None,
-) -> Callable[[Callable[..., InReturnT]], Callable[..., InReturnT]]:
+) -> Callable[[Callable[InParams, InReturnT]], Callable[InParams, InReturnT]]:
     """Decorate a function parameter that is a DataFrame (Pandas, Polars, Modin, or PyArrow).
 
     Document the contents of an input parameter. The parameter will be validated in runtime.
@@ -299,11 +304,11 @@ def df_in(
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
-    def wrapper_df_in(func: Callable[..., InReturnT]) -> Callable[..., InReturnT]:
+    def wrapper_df_in(func: Callable[InParams, InReturnT]) -> Callable[InParams, InReturnT]:
         resolver = ParameterResolver(func)
 
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> InReturnT:
+        def wrapper(*args: InParams.args, **kwargs: InParams.kwargs) -> InReturnT:
             df, param_name, resolved_nw_df = resolver.resolve(name, *args, **kwargs)
             nw_df = assert_is_dataframe(df, "parameter type", resolved_nw_df)
             _run_validations(
@@ -331,7 +336,7 @@ def df_in(
 
 def df_log(
     level: int = logging.DEBUG, include_dtypes: bool = False
-) -> Callable[[Callable[..., LogReturnT]], Callable[..., LogReturnT]]:
+) -> Callable[[Callable[LogParams, LogReturnT]], Callable[LogParams, LogReturnT]]:
     """Decorate a function that consumes or produces a Pandas DataFrame or both.
 
     Logs the columns of the consumed and/or produced DataFrame.
@@ -345,11 +350,11 @@ def df_log(
 
     """
 
-    def wrapper_df_log(func: Callable[..., LogReturnT]) -> Callable[..., LogReturnT]:
+    def wrapper_df_log(func: Callable[LogParams, LogReturnT]) -> Callable[LogParams, LogReturnT]:
         resolver = ParameterResolver(func)
 
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> LogReturnT:
+        def wrapper(*args: LogParams.args, **kwargs: LogParams.kwargs) -> LogReturnT:
             func_name = getattr(func, "__name__", "<unknown>")
             df, _, _ = resolver.resolve(None, *args, **kwargs)
             log_dataframe_input(level, func_name, df, include_dtypes)
