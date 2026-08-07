@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from daffy.patterns import compile_regex_pattern, is_regex_string, match_column_with_regex
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
 from daffy.validators.checks import ChecksValidator
 from daffy.validators.columns import ColumnsExistValidator, DtypeValidator, NullableValidator, StrictModeValidator
@@ -71,7 +71,7 @@ def _expand_checks(specs: dict[str, dict[str, Any]], resolved: dict[str, list[st
 
 
 def build_validation_pipeline(  # noqa: C901
-    columns: Sequence[Any] | dict[Any, Any] | None,
+    columns: Sequence[Any] | Mapping[str, Any] | None,
     strict: bool,
     strict_specs: bool,
     lazy: bool,

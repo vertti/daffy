@@ -246,7 +246,7 @@ def test_multiple_named_inputs_without_names_in_function_call(
 ) -> None:
     @df_in(name="cars", columns=["Brand", "Price"], strict=True)
     @df_in(name="ext_cars", columns=["Brand", "Price", "Year"], strict=True)
-    def test_fn(cars: pd.DataFrame, ext_cars: pd.DataFrame) -> int:
+    def test_fn(cars: IntoDataFrame, ext_cars: IntoDataFrame) -> int:
         return len(cars) + len(ext_cars)
 
     test_fn(basic_df, extended_df)
