@@ -10,7 +10,7 @@ def test_resolver_default_kwargs() -> None:
     resolver = ParameterResolver(func)
 
     # Missing optional kwarg
-    val, _ = resolver.resolve("b", 1)
+    val, _, _ = resolver.resolve("b", 1)
     assert val == 10
 
     # Missing required kwarg
@@ -29,5 +29,5 @@ def test_resolver_default_pos() -> None:
     resolver = ParameterResolver(func)
 
     # Missing optional pos arg
-    val, _ = resolver.resolve("b", 1)
+    val, _, _ = resolver.resolve("b", 1)
     assert val == 20

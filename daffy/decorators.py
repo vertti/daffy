@@ -274,8 +274,8 @@ def df_in(
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> InReturnT:
-            df, param_name = resolver.resolve(name, *args, **kwargs)
-            nw_df = assert_is_dataframe(df, "parameter type")
+            df, param_name, resolved_nw_df = resolver.resolve(name, *args, **kwargs)
+            nw_df = assert_is_dataframe(df, "parameter type", resolved_nw_df)
             _run_validations(
                 df,
                 getattr(func, "__name__", "<unknown>"),
@@ -321,7 +321,7 @@ def df_log(
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> LogReturnT:
             func_name = getattr(func, "__name__", "<unknown>")
-            df, _ = resolver.resolve(None, *args, **kwargs)
+            df, _, _ = resolver.resolve(None, *args, **kwargs)
             log_dataframe_input(level, func_name, df, include_dtypes)
             result = func(*args, **kwargs)
             log_dataframe_output(level, func_name, result, include_dtypes)

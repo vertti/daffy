@@ -5,8 +5,8 @@ All notable changes to this project will be documented in this file.
 ## 3.0.0
 
 This release removes two pieces of hidden magic and makes validation roughly three times cheaper.
-All three behavior changes were found by mutation-testing the suite: each was behaviour nothing
-pinned and nothing documented.
+Mutation testing found all three behavior changes: the test suite asserted none of them, and the
+documentation described none of them.
 
 **Migrating:** anchor any unanchored regex you relied on (`r"\d+"` → `r"^\d+"`, `r/Price_\d+/` →
 `r/^Price_\d+/`), and add `nullable=False` to columns where you were relying on a null failing a
@@ -25,7 +25,7 @@ value check.
 
 ### Performance
 
-- Per-call validation overhead cut by roughly 3x: `@df_in(columns=...)` on a 100-row Pandas frame went from ~212µs to ~66µs, `@df_in(min_rows=...)` from ~216µs to ~69µs. Configuration is now resolved in one lookup per call instead of one per setting, the DataFrame is converted to Narwhals once instead of three times, and column dtypes are only read when a dtype constraint needs them.
+- Per-call validation overhead cut by roughly 5x: `@df_in(columns=...)` on a 100-row Pandas frame went from ~212µs to ~41µs, `@df_in(min_rows=...)` from ~216µs to ~44µs. Configuration is now resolved in one lookup per call instead of one per setting, the DataFrame is converted to Narwhals once instead of three times, and column dtypes are only read when a dtype constraint needs them.
 
 ### Removed
 
