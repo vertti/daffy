@@ -10,7 +10,7 @@ not a violation. Use `nullable=False` or the `notnull` check to constrain nulls.
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 import narwhals as nw
 
@@ -31,6 +31,8 @@ CheckName = Literal[
     "str_contains",
     "str_length",
 ]
+
+BUILTIN_CHECK_NAMES: frozenset[str] = frozenset(get_args(CheckName))
 
 CheckViolation = tuple[str, str, int, list[Any]]
 

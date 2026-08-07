@@ -1,6 +1,6 @@
 """Tests for value checks."""
 
-from typing import Any
+from typing import Any, ClassVar
 
 import narwhals as nw
 import pandas as pd
@@ -8,7 +8,7 @@ import polars as pl
 import pyarrow as pa
 import pytest
 
-from daffy.checks import apply_check, validate_checks
+from daffy.checks import BUILTIN_CHECK_NAMES, apply_check, validate_checks
 
 
 def numeric_with_null(backend: str) -> Any:
@@ -485,3 +485,44 @@ class TestValidateChecks:
         violations = validate_checks(nws, "score", {"gt": 0, "lt": 100})
         assert len(violations) == 1
         assert violations[0][1] == "lt"
+
+
+class TestBuiltinCheckNamesStayInSync:
+    """The names offered to callers must be exactly the names apply_check implements.
+
+    Decoration-time validation rejects unknown names using BUILTIN_CHECK_NAMES, so a
+    name that drifts out of apply_check would be accepted and then fail on first call -
+    or worse, a working check would be rejected before it ever ran.
+    """
+
+    SAMPLE_VALUES: ClassVar[dict[str, Any]] = {
+        "gt": 0,
+        "ge": 0,
+        "lt": 100,
+        "le": 100,
+        "between": (0, 100),
+        "eq": 1,
+        "ne": 9,
+        "isin": [1, 2, 3],
+        "notin": [9],
+        "notnull": True,
+        "str_regex": r"\d+",
+        "str_startswith": "1",
+        "str_endswith": "1",
+        "str_contains": "1",
+        "str_length": (1, 5),
+    }
+
+    def test_sample_values_cover_every_advertised_check(self) -> None:
+        assert set(self.SAMPLE_VALUES) == BUILTIN_CHECK_NAMES
+
+    @pytest.mark.parametrize("check_name", sorted(BUILTIN_CHECK_NAMES))
+    def test_every_advertised_check_is_implemented(self, check_name: str) -> None:
+        series = pd.Series(["1", "2", "3"]) if check_name.startswith("str_") else pd.Series([1, 2, 3])
+
+        apply_check(series, check_name, self.SAMPLE_VALUES[check_name])
+
+    def test_a_name_outside_the_set_is_rejected(self) -> None:
+        assert "gtt" not in BUILTIN_CHECK_NAMES
+        with pytest.raises(ValueError, match="Unknown check"):
+            apply_check(pd.Series([1]), "gtt", 0)
