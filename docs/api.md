@@ -226,7 +226,9 @@ Available built-in checks for the `checks` parameter:
 | `str_contains`   | `str`      | String contains substring  |
 | `str_length`     | `(lo, hi)` | String length in range     |
 
-Custom checks are also supported by passing a callable as the check value.
+Custom checks are also supported by passing a callable as the check value. A callable may use any
+name; a non-callable value must name one of the built-in checks above, and a name that matches
+neither is rejected when the decorator is applied rather than on the first call.
 
 `str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
 yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.

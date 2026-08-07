@@ -309,3 +309,43 @@ class TestErrorMessages:
         df = pd.DataFrame({"a": [-1], "b": [-2]})
         with pytest.raises(AssertionError, match="Check violations"):
             process(df)
+
+
+class TestCheckNamesValidatedAtDecoration:
+    """A misspelled built-in check fails when the decorator is applied, not on first call."""
+
+    @pytest.mark.parametrize("decorator", [df_in, df_out])
+    def test_unknown_check_name_rejected(self, decorator: Any) -> None:
+        with pytest.raises(ValueError, match="Unknown check 'gtt' for column 'price'"):
+            decorator(columns={"price": {"checks": {"gtt": 0}}})
+
+    def test_error_lists_the_valid_names(self) -> None:
+        with pytest.raises(ValueError, match="str_startswith"):
+            df_in(columns={"price": {"checks": {"startswith": "x"}}})
+
+    def test_rejected_before_the_function_is_ever_called(self) -> None:
+        with pytest.raises(ValueError, match="Unknown check"):
+
+            @df_in(columns={"price": {"checks": {"greater_than": 0}}})
+            def process(df: pd.DataFrame) -> pd.DataFrame:  # pragma: no cover
+                return df
+
+    def test_shorthand_positional_spec_is_checked_too(self) -> None:
+        with pytest.raises(ValueError, match="Unknown check 'gtt'"):
+            df_in({"price": {"checks": {"gtt": 0}}})
+
+    def test_custom_callable_may_use_any_name(self) -> None:
+        @df_in(columns={"price": {"checks": {"no_outliers": lambda s: s > 0}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        df = pd.DataFrame({"price": [1, 2, 3]})
+        assert to_list(process(df)["price"]) == [1, 2, 3]
+
+    @pytest.mark.parametrize("columns", [["price"], {"price": "int64"}, {"price": {"dtype": "int64"}}, None])
+    def test_specs_without_checks_are_untouched(self, columns: Any) -> None:
+        df_in(columns=columns)
+
+    def test_non_dict_checks_left_to_runtime(self) -> None:
+        """Malformed `checks` is a spec-shape problem, handled by strict_specs, not here."""
+        df_in(columns={"price": {"checks": "nonsense"}})

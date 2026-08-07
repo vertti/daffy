@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Changed
+
+- Misspelled built-in check names are now rejected when the decorator is applied instead of on the first call with data, so `{"checks": {"gtt": 0}}` fails at import time with the list of valid names. Custom checks are unaffected: a callable check value may carry any name, exactly as at runtime.
+
 ## 3.0.0
 
 This release removes two pieces of hidden magic and makes validation roughly five times cheaper.

@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from daffy.dataframe_types import IntoDataFrameT
     from daffy.validation import ColumnsDef
 
+from daffy.checks import BUILTIN_CHECK_NAMES
 from daffy.config import resolve_decorator_settings
 from daffy.utils import (
     ParameterResolver,
@@ -41,6 +42,33 @@ def _validate_composite_unique(composite_unique: list[list[str]] | None) -> None
         for j, col in enumerate(combo):
             if not isinstance(col, str):
                 raise TypeError(f"composite_unique[{i}][{j}] must be a string, got {type(col).__name__}")
+
+
+def _validate_check_names(columns: ColumnsDef) -> None:
+    """Reject unknown built-in check names at decoration time.
+
+    Mirrors `apply_check`: a callable check value is a custom check and may carry any
+    name, so only non-callable values are matched against the built-ins. Without this,
+    a typo like `{"checks": {"gtt": 0}}` decorates cleanly and only fails on the first
+    call with data.
+    """
+    if not isinstance(columns, dict):
+        return
+
+    for column, spec in columns.items():
+        if not isinstance(spec, dict):
+            continue
+        checks = spec.get("checks")
+        if not isinstance(checks, dict):
+            continue
+        for check_name, check_value in checks.items():
+            if callable(check_value) or check_name in BUILTIN_CHECK_NAMES:
+                continue
+            valid = ", ".join(sorted(BUILTIN_CHECK_NAMES))
+            raise ValueError(
+                f"Unknown check '{check_name}' for column '{column}'. "
+                f"Pass a callable to define a custom check, or use one of: {valid}"
+            )
 
 
 def _validate_shape_constraints(
@@ -149,6 +177,7 @@ def df_out(
         Callable: Decorated function with preserved DataFrame return type
 
     """
+    _validate_check_names(columns)
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
@@ -266,6 +295,7 @@ def df_in(
         columns = name
         name = None
 
+    _validate_check_names(columns)
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
