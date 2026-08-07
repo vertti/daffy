@@ -21,16 +21,3 @@ class Validator(Protocol):
     def validate(self, ctx: ValidationContext) -> list[str]:
         """Validate the DataFrame in context. Return list of error messages."""
         ...
-
-
-@runtime_checkable
-class SkippableValidator(Protocol):
-    """Validator that can be skipped based on context."""
-
-    def should_skip(self, ctx: ValidationContext) -> bool:
-        """Return True to skip this validator entirely."""
-        ...
-
-    def validate(self, ctx: ValidationContext) -> list[str]:
-        """Validate the DataFrame in context. Return list of error messages."""
-        ...

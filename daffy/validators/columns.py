@@ -52,8 +52,6 @@ def _dtype_matches(actual: Any, expected: Any) -> bool:
     expected_norm = _normalize_dtype(expected)
     if actual_norm == expected_norm:
         return True
-    if "(" in expected_norm:
-        return False
     return _base_dtype(actual_norm) == expected_norm
 
 

@@ -65,7 +65,10 @@ class RowValidator:
         ctx: ValidationContext,
     ) -> str:
         count_prefix = "at least " if terminated_early else ""
-        lines = [f"Row validation failed for {count_prefix}{total_errors} out of {ctx.row_count} rows:", ""]
+        lines = [
+            f"Row validation failed for {count_prefix}{total_errors} out of {ctx.row_count} rows{ctx.param_info}:",
+            "",
+        ]
 
         for idx, error in failed_rows:
             lines.append(f"  Row {idx}:")
@@ -74,7 +77,11 @@ class RowValidator:
                 lines.append(f"    - {field}: {err['msg']}" if field else f"    - {err['msg']}")
             lines.append("")
 
-        if total_errors > len(failed_rows):
+        if terminated_early:
+            # Counting stopped at the break, so the remaining total is unknown. Saying
+            # "and 1 more" here read as "6 bad rows out of 10000" when every row failed.
+            lines.append(f"  ... stopped after {len(failed_rows)} reported rows; more rows may have errors")
+        elif total_errors > len(failed_rows):
             lines.append(f"  ... and {total_errors - len(failed_rows)} more row(s) with errors")
 
-        return "\n".join(lines) + ctx.param_info
+        return "\n".join(lines)
