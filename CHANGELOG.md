@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## 3.0.0
 
-This release removes two pieces of hidden magic and makes validation roughly three times cheaper.
+This release removes two pieces of hidden magic and makes validation roughly five times cheaper.
 Mutation testing found all three behavior changes: the test suite asserted none of them, and the
 documentation described none of them.
 
