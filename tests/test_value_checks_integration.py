@@ -349,3 +349,67 @@ class TestCheckNamesValidatedAtDecoration:
     def test_non_dict_checks_left_to_runtime(self) -> None:
         """Malformed `checks` is a spec-shape problem, handled by strict_specs, not here."""
         df_in(columns={"price": {"checks": "nonsense"}})
+
+
+class TestOverlappingSpecs:
+    """Two specs can name the same column - a regex and an explicit name, or two regexes."""
+
+    def test_checks_from_both_specs_apply(self) -> None:
+        @df_in(columns={"r/^col/": {"checks": {"gt": 0}}, "col1": {"checks": {"lt": 100}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="gt"):
+            process(pd.DataFrame({"col1": [-5]}))
+        with pytest.raises(AssertionError, match="lt"):
+            process(pd.DataFrame({"col1": [500]}))
+        assert to_list(process(pd.DataFrame({"col1": [5]}))["col1"]) == [5]
+
+    def test_check_merging_does_not_depend_on_spec_order(self) -> None:
+        @df_in(columns={"col1": {"checks": {"lt": 100}}, "r/^col/": {"checks": {"gt": 0}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="gt"):
+            process(pd.DataFrame({"col1": [-5]}))
+
+    @pytest.mark.parametrize(("constraint", "value"), [("nullable", False), ("unique", True)])
+    def test_overlapping_column_constraints_do_not_duplicate(self, constraint: str, value: bool) -> None:
+        """A column matched by two specs must not produce a duplicate backend expression."""
+
+        @df_in(columns={"r/^col/": {constraint: value}, "col1": {constraint: value}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"col1": [1, 2]}))["col1"]) == [1, 2]
+
+    def test_explicit_dtype_wins_over_regex_dtype(self) -> None:
+        @df_in(columns={"r/^col/": "int64", "col1": "float64"})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"col1": [1.5]}))["col1"]) == [1.5]
+
+
+class TestStrictWithoutColumnConstraints:
+    def test_empty_spec_with_strict_rejects_every_column(self) -> None:
+        @df_in([], strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="unexpected column"):
+            process(pd.DataFrame({"a": [1]}))
+
+    def test_empty_spec_with_strict_accepts_an_empty_frame(self) -> None:
+        @df_in([], strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert process(pd.DataFrame()) is not None
+
+    def test_optional_regex_columns_are_allowed_under_strict(self) -> None:
+        @df_in({"a": {"required": True}, "r/^price_/": {"required": False}}, strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert process(pd.DataFrame({"a": [1], "price_eur": [1.0]})) is not None
