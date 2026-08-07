@@ -43,6 +43,10 @@ def compile_regex_pattern(pattern_string: str) -> RegexColumnDef:
 
 
 def match_column_with_regex(column_pattern: RegexColumnDef, df_columns: list[str]) -> list[str]:
-    """Find DataFrame columns matching a regex pattern."""
+    """Find DataFrame columns matching a regex pattern.
+
+    The pattern is applied as written - it matches anywhere in the column name unless
+    anchored by the caller, the same way `str_regex` treats value patterns.
+    """
     _, pattern = column_pattern
-    return [col for col in df_columns if pattern.match(col)]
+    return [col for col in df_columns if pattern.search(col)]

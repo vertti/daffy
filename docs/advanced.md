@@ -20,6 +20,10 @@ In this example:
 - The DataFrame must have a column named exactly "Brand"
 - The DataFrame must have at least one column matching the pattern "Price_\d+" (e.g., "Price_1", "Price_2", etc.)
 
+The pattern is applied as written and matches anywhere in the column name, so `r/Price_\d+/` also
+matches `Total_Price_1`. Anchor it yourself when you need a tighter match: `r/^Price_\d+/` requires
+the name to start with the pattern, and `r/^Price_\d+$/` requires the whole name to match.
+
 If no columns match a regex pattern, an error is raised:
 
 ```
