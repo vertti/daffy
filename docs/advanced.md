@@ -313,8 +313,11 @@ def process_data(df):
 `str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
 yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
 
-Nulls count as failures for every check. A null in a checked column is reported as a violation
-rather than skipped, on all supported backends.
+Checks constrain values, and a null is not a value. Daffy does not rewrite null comparison
+results, so null handling follows your backend: on Polars, PyArrow and Pandas nullable dtypes
+a comparison against null is "unknown" and is not reported, while Pandas float `NaN` compares
+as `False` and therefore does fail. Use `nullable=False` or the `notnull` check to constrain
+nulls explicitly — those work identically everywhere.
 
 ### Multiple Checks
 

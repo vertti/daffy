@@ -2,6 +2,10 @@
 
 All check functions return a mask where True indicates a FAILING value.
 This convention allows consistent handling: count failures and sample them.
+
+Null handling follows the backend rather than being normalised here: a comparison
+against a null yields "unknown" on backends with three-valued logic, and unknown is
+not a violation. Use `nullable=False` or the `notnull` check to constrain nulls.
 """
 
 from __future__ import annotations
@@ -37,17 +41,19 @@ def _nw_series(series: Any) -> nw.Series[Any]:
 
 
 def _failing_mask(valid_mask: nw.Series[Any]) -> nw.Series[Any]:
-    """Turn a validity mask into a failure mask, counting nulls as failures.
+    """Turn a validity mask into a failure mask, leaving each backend's null semantics intact.
 
-    Filling nulls before inverting keeps pandas object-dtype masks (which hold `None`
-    rather than a null-aware boolean) from reaching `~`, where they raise a TypeError.
+    A null comparison result means "unknown", not "failed", so it is not counted as a
+    violation. Resolving it before inverting also keeps pandas object-dtype masks (which
+    hold `None` rather than a null-aware boolean) from reaching `~`, where they raise a
+    TypeError.
     """
-    return ~valid_mask.fill_null(False).cast(nw.Boolean())
+    return ~valid_mask.fill_null(True).cast(nw.Boolean())
 
 
 def _evaluate_mask(nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int) -> tuple[int, list[Any]]:
     """Count failures and sample failing values from a boolean mask (True = failing)."""
-    nw_mask = fail_mask.fill_null(True)
+    nw_mask = fail_mask.fill_null(False)
     fail_count = int(nw_mask.sum())
     if fail_count == 0:
         return 0, []

@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Behavior change:** value checks no longer force nulls to count as failures. Daffy used to rewrite null comparison results into violations; it now leaves each backend's semantics intact, so on Polars, PyArrow and Pandas nullable dtypes a comparison against null is "unknown" and is not reported. Pandas float `NaN` compares as `False` and still fails. Use `nullable=False` or the `notnull` check to constrain nulls explicitly — those behave identically on every backend.
 - **Behavior change:** `str_regex` now applies the pattern as written instead of silently anchoring it at the start of the value. `{"str_regex": r"\d+"}` used to mean "starts with digits" and now means "contains digits"; add the anchor yourself (`r"^\d+"`, or `r"^\d+$"` for a full match) to keep the old meaning. Patterns that were already anchored are unaffected.
 
 ### Fixed
