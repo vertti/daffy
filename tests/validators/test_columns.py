@@ -1,6 +1,10 @@
 """Tests for column validators."""
 
+from typing import Any
+
 import pandas as pd
+import polars as pl
+import pytest
 
 from daffy.validators.columns import (
     ColumnsExistValidator,
@@ -59,6 +63,51 @@ class TestDtypeValidator:
         validator = DtypeValidator({"nonexistent": "int64"})
 
         assert validator.validate(ctx) == []
+
+
+class TestParameterisedDtypes:
+    """Parameterised dtypes are declarable by base name; spell out parameters to constrain them."""
+
+    @pytest.mark.parametrize(
+        ("df", "expected"),
+        [
+            pytest.param(pd.DataFrame({"c": pd.to_datetime(["2024-01-01"])}), "datetime", id="pandas-datetime"),
+            pytest.param(
+                pd.DataFrame({"c": pd.to_datetime(["2024-01-01"]).tz_localize("UTC")}),
+                "datetime",
+                id="pandas-datetime-tz",
+            ),
+            pytest.param(pd.DataFrame({"c": pd.to_timedelta(["1 days"])}), "duration", id="pandas-duration"),
+            pytest.param(pl.DataFrame({"c": [[1, 2]]}), "list", id="polars-list"),
+            pytest.param(pl.DataFrame({"c": [{"x": 1}]}), "struct", id="polars-struct"),
+            pytest.param(pl.DataFrame({"c": ["a"]}, schema={"c": pl.Enum(["a"])}), "enum", id="polars-enum"),
+        ],
+    )
+    def test_base_name_accepted(self, df: Any, expected: str) -> None:
+        ctx = ValidationContext(df=df)
+        assert DtypeValidator({"c": expected}).validate(ctx) == []
+
+    def test_full_parameterised_spelling_still_accepted(self) -> None:
+        ctx = ValidationContext(df=pd.DataFrame({"c": pd.to_datetime(["2024-01-01"])}))
+        assert DtypeValidator({"c": "datetime(time_unit='ns', time_zone=none)"}).validate(ctx) == []
+
+    def test_parameters_are_enforced_when_spelled_out(self) -> None:
+        ctx = ValidationContext(df=pd.DataFrame({"c": pd.to_datetime(["2024-01-01"])}))
+        errors = DtypeValidator({"c": "datetime(time_unit='ms', time_zone=none)"}).validate(ctx)
+        assert len(errors) == 1
+
+    @pytest.mark.parametrize(
+        ("df", "expected"),
+        [
+            pytest.param(pd.DataFrame({"c": pd.to_datetime(["2024-01-01"])}), "int64", id="datetime-vs-int"),
+            pytest.param(pd.DataFrame({"c": pd.to_timedelta(["1 days"])}), "datetime", id="duration-vs-datetime"),
+            pytest.param(pl.DataFrame({"c": [[1, 2]]}), "struct", id="list-vs-struct"),
+            pytest.param(pl.DataFrame({"c": ["a"]}, schema={"c": pl.Enum(["a"])}), "string", id="enum-vs-string"),
+        ],
+    )
+    def test_base_name_does_not_match_a_different_dtype(self, df: Any, expected: str) -> None:
+        ctx = ValidationContext(df=df)
+        assert len(DtypeValidator({"c": expected}).validate(ctx)) == 1
 
 
 class TestNullableValidator:

@@ -36,6 +36,27 @@ def _normalize_dtype(dtype: str) -> str:
     return _DTYPE_ALIASES.get(dtype_lower, dtype_lower)
 
 
+def _base_dtype(dtype: str) -> str:
+    """Strip parameters from a dtype, e.g. "datetime(time_unit='ns', ...)" -> "datetime"."""
+    return dtype.split("(", 1)[0]
+
+
+def _dtype_matches(actual: Any, expected: Any) -> bool:
+    """Compare an actual dtype against an expected one.
+
+    Parameterised dtypes (Datetime, Duration, List, Struct, Enum) render with their
+    parameters, so an unparameterised expectation like "datetime" is compared against
+    the base name only. Spell the parameters out to constrain them.
+    """
+    actual_norm = _normalize_dtype(actual)
+    expected_norm = _normalize_dtype(expected)
+    if actual_norm == expected_norm:
+        return True
+    if "(" in expected_norm:
+        return False
+    return _base_dtype(actual_norm) == expected_norm
+
+
 @dataclass
 class DtypeValidator:
     expected: dict[str, Any]
@@ -45,7 +66,7 @@ class DtypeValidator:
         for col, expected_dtype in self.expected.items():
             if ctx.has_column(col):
                 actual = ctx.get_dtype(col)
-                if _normalize_dtype(actual) != _normalize_dtype(expected_dtype):
+                if not _dtype_matches(actual, expected_dtype):
                     actual_str = str(actual).lower()
                     msg = f"Column {col}{ctx.param_info} has wrong dtype. Was {actual_str}, expected {expected_dtype}"
                     errors.append(msg)

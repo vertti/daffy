@@ -160,6 +160,19 @@ Map column names to expected dtypes:
 columns={"a": "int64", "b": "object", "c": "float64"}
 ```
 
+Parameterised dtypes can be declared by base name, which matches whatever parameters the column
+carries. Spell the parameters out when you want to constrain them:
+
+```python
+columns={"created_at": "datetime"}                                  # any time unit or time zone
+columns={"created_at": "datetime(time_unit='ns', time_zone=none)"}  # exactly this one
+columns={"tags": "list", "address": "struct", "grade": "enum"}
+```
+
+Note that `"object"` and `"str"` both mean "string" — a Pandas `object` column is reported as a
+string regardless of what it holds, so `{"a": "str"}` will not catch an `object` column containing
+numbers or dicts.
+
 ### Rich Column Spec
 
 Full control over column validation:

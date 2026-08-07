@@ -12,7 +12,8 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls; the null is reported as a check failure like on every other backend
+- Parameterised dtypes can now be declared by base name: `{"created_at": "datetime"}` matches any time unit or time zone, and the same applies to `duration`, `list`, `struct` and `enum`. Previously the only accepted spelling was the full internal repr (`"datetime(time_unit='ns', time_zone=none)"`). Spelling the parameters out still constrains them.
+- String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls
 
 ### Documentation
 
