@@ -1,11 +1,17 @@
 """Tests for the daffy configuration system."""
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import pytest
 
-from daffy.config import clear_config_cache, get_checks_max_samples, get_config, get_strict, get_strict_specs
+from daffy.config import (
+    clear_config_cache,
+    get_checks_max_samples,
+    get_config,
+    resolve_decorator_settings,
+)
 
 
 def write_pyproject(directory: Path, daffy_section: str) -> Path:
@@ -22,40 +28,42 @@ def test_get_config_default() -> None:
         assert config["strict"] is False
 
 
-def test_get_strict_default() -> None:
-    """Test that get_strict returns default value when no explicit value is provided."""
-    with patch("daffy.config.get_config", return_value={"strict": False}):
-        assert get_strict() is False
-
-    with patch("daffy.config.get_config", return_value={"strict": True}):
-        assert get_strict() is True
-
-
-def test_get_strict_override() -> None:
-    """Test that get_strict respects explicitly provided value."""
-    with patch("daffy.config.get_config", return_value={"strict": False}):
-        assert get_strict(True) is True
-
-    with patch("daffy.config.get_config", return_value={"strict": True}):
-        assert get_strict(False) is False
+def _config(**overrides: Any) -> dict[str, Any]:
+    defaults = {
+        "strict": False,
+        "lazy": False,
+        "strict_specs": False,
+        "row_validation_max_errors": 5,
+        "checks_max_samples": 5,
+        "allow_empty": True,
+    }
+    return {**defaults, **overrides}
 
 
-def test_get_strict_specs_default() -> None:
-    """Verify default strict_specs value is read from config."""
-    with patch("daffy.config.get_config", return_value={"strict_specs": False}):
-        assert get_strict_specs() is False
+@pytest.mark.parametrize("setting", ["strict", "lazy", "allow_empty"])
+@pytest.mark.parametrize("configured", [True, False])
+def test_settings_fall_back_to_config(setting: str, configured: bool) -> None:
+    with patch("daffy.config.get_config", return_value=_config(**{setting: configured})):
+        settings = resolve_decorator_settings(None, None, None)
 
-    with patch("daffy.config.get_config", return_value={"strict_specs": True}):
-        assert get_strict_specs() is True
+    assert getattr(settings, setting) is configured
 
 
-def test_get_strict_specs_override() -> None:
-    """Verify strict_specs override argument takes precedence over config."""
-    with patch("daffy.config.get_config", return_value={"strict_specs": False}):
-        assert get_strict_specs(True) is True
+@pytest.mark.parametrize(("position", "setting"), [(0, "strict"), (1, "lazy"), (2, "allow_empty")])
+@pytest.mark.parametrize("explicit", [True, False])
+def test_explicit_argument_beats_config(position: int, setting: str, explicit: bool) -> None:
+    args: list[bool | None] = [None, None, None]
+    args[position] = explicit
 
-    with patch("daffy.config.get_config", return_value={"strict_specs": True}):
-        assert get_strict_specs(False) is False
+    with patch("daffy.config.get_config", return_value=_config(**{setting: not explicit})):
+        settings = resolve_decorator_settings(*args)
+
+    assert getattr(settings, setting) is explicit
+
+
+def test_strict_specs_is_read_from_config() -> None:
+    with patch("daffy.config.get_config", return_value=_config(strict_specs=True)):
+        assert resolve_decorator_settings(None, None, None).strict_specs is True
 
 
 def test_config_from_pyproject(tmp_path: Path) -> None:

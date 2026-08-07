@@ -123,62 +123,12 @@ def resolve_decorator_settings(strict: bool | None, lazy: bool | None, allow_emp
     )
 
 
-def _get_bool_config(param: bool | None, key: str) -> bool:
-    """Return param if provided, otherwise config value."""
-    if param is not None:
-        return param
-    return bool(get_config()[key])
-
-
 def _get_int_config(param: int | None, key: str, min_value: int = 1) -> int:
     """Return param if provided, otherwise config value. Validates minimum."""
     value = param if param is not None else int(get_config()[key])
     if value < min_value:
         raise ValueError(f"{key} must be >= {min_value}, got {value}")
     return value
-
-
-def get_strict(strict_param: bool | None = None) -> bool:
-    """Get the strict mode setting, with explicit parameter taking precedence over configuration.
-
-    Args:
-        strict_param: Explicitly provided strict parameter value, or None to use config
-
-    Returns:
-        bool: The effective strict mode setting
-
-    """
-    return _get_bool_config(strict_param, _KEY_STRICT)
-
-
-def get_lazy(lazy_param: bool | None = None) -> bool:
-    """Get the lazy mode setting, with explicit parameter taking precedence over configuration.
-
-    When lazy=True, validation collects all errors before raising instead of stopping at the first.
-
-    Args:
-        lazy_param: Explicitly provided lazy parameter value, or None to use config
-
-    Returns:
-        bool: The effective lazy mode setting
-
-    """
-    return _get_bool_config(lazy_param, _KEY_LAZY)
-
-
-def get_strict_specs(strict_specs_param: bool | None = None) -> bool:
-    """Get strict_specs setting, with explicit parameter taking precedence over configuration.
-
-    When strict_specs=True, invalid column spec keys/types raise errors instead of being ignored.
-
-    Args:
-        strict_specs_param: Explicitly provided strict_specs value, or None to use config
-
-    Returns:
-        bool: The effective strict_specs setting
-
-    """
-    return _get_bool_config(strict_specs_param, _KEY_STRICT_SPECS)
 
 
 def get_row_validation_max_errors() -> int:
@@ -189,18 +139,3 @@ def get_row_validation_max_errors() -> int:
 def get_checks_max_samples(max_samples: int | None = None) -> int:
     """Get max_samples setting for value checks."""
     return _get_int_config(max_samples, _KEY_CHECKS_MAX_SAMPLES)
-
-
-def get_allow_empty(allow_empty_param: bool | None = None) -> bool:
-    """Get the allow_empty setting, with explicit parameter taking precedence over configuration.
-
-    When allow_empty=False, empty DataFrames (0 rows) will raise an error.
-
-    Args:
-        allow_empty_param: Explicitly provided allow_empty parameter value, or None to use config
-
-    Returns:
-        bool: The effective allow_empty setting
-
-    """
-    return _get_bool_config(allow_empty_param, _KEY_ALLOW_EMPTY)
