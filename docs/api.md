@@ -135,7 +135,7 @@ def process(df):
 @df_log(include_dtypes=True)
 def process(df):
     return df
-# Logs: ... columns: ['a', 'b'] with dtypes ['int64', 'object']
+# Logs: ... columns: ['a', 'b'] with dtypes [Int64, String]
 ```
 
 ---
@@ -192,6 +192,24 @@ columns={
 }
 ```
 
+Those five are the only valid constraint names. A misspelling such as `{"nullabel": False}` used to
+be accepted and then do nothing; it now raises `ValueError` when the decorator is applied.
+`nullable`, `unique` and `required` must be `True` or `False` — `"False"` is a string, and is
+rejected rather than ignored.
+
+For editor and type-checker support, annotate specs with `ColumnConstraints`, which catches the same
+typos statically:
+
+```python
+from daffy import ColumnConstraints
+
+SPEC: dict[str, ColumnConstraints] = {"price": {"nullable": False, "checks": {"gt": 0}}}
+
+@df_in(SPEC)
+def process_data(df):
+    ...
+```
+
 ### Regex Patterns
 
 Match multiple columns with regex:
@@ -230,6 +248,11 @@ Custom checks are also supported by passing a callable as the check value. A cal
 name; a non-callable value must name one of the built-in checks above, and a name that matches
 neither is rejected when the decorator is applied rather than on the first call.
 
+A check is also rejected if it cannot mean anything on the column's dtype — an ordering check
+(`gt`, `ge`, `lt`, `le`, `between`) on a string column, or a `str_*` check on a non-string column.
+Backends disagreed about these: some raised their own error while Polars compared strings
+lexicographically and reported a violation that looked real.
+
 `str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
 yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
 
@@ -263,9 +286,15 @@ Configure Daffy in `pyproject.toml`:
 
 ```toml
 [tool.daffy]
-strict = false                 # Default strict mode (default: false)
-row_validation_max_errors = 5  # Max errors shown in row validation (default: 5)
+strict = false                 # Reject unexpected columns (default: false)
+lazy = false                   # Collect all errors before raising (default: false)
+allow_empty = true             # Allow DataFrames with no rows (default: true)
+strict_specs = false           # Raise TypeError on invalid column keys or spec types (default: false)
+row_validation_max_errors = 5  # Max failed rows shown in row validation (default: 5)
 checks_max_samples = 5         # Max sample values in check errors (default: 5)
 ```
 
-Configuration is read from the `pyproject.toml` in the current working directory or any parent directory.
+Configuration is read from the `pyproject.toml` in the current working directory or any parent
+directory. Discovery starts at the process working directory, not at your module, so running the
+same code from a different directory can pick up a different configuration — worth knowing in a
+monorepo, or when a service runs with a `WORKDIR` that differs from your development checkout.
