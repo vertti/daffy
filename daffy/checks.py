@@ -2,6 +2,10 @@
 
 All check functions return a mask where True indicates a FAILING value.
 This convention allows consistent handling: count failures and sample them.
+
+Null handling follows the backend rather than being normalised here: a comparison
+against a null yields "unknown" on backends with three-valued logic, and unknown is
+not a violation. Use `nullable=False` or the `notnull` check to constrain nulls.
 """
 
 from __future__ import annotations
@@ -36,9 +40,20 @@ def _nw_series(series: Any) -> nw.Series[Any]:
     return nw.from_native(series, series_only=True)
 
 
+def _failing_mask(valid_mask: nw.Series[Any]) -> nw.Series[Any]:
+    """Turn a validity mask into a failure mask, leaving each backend's null semantics intact.
+
+    A null comparison result means "unknown", not "failed", so it is not counted as a
+    violation. Resolving it before inverting also keeps pandas object-dtype masks (which
+    hold `None` rather than a null-aware boolean) from reaching `~`, where they raise a
+    TypeError.
+    """
+    return ~valid_mask.fill_null(True).cast(nw.Boolean())
+
+
 def _evaluate_mask(nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int) -> tuple[int, list[Any]]:
     """Count failures and sample failing values from a boolean mask (True = failing)."""
-    nw_mask = fail_mask.fill_null(True)
+    nw_mask = fail_mask.fill_null(False)
     fail_count = int(nw_mask.sum())
     if fail_count == 0:
         return 0, []
@@ -78,26 +93,28 @@ def apply_check(series_or_nws: Any, check_name: str, check_value: Any, max_sampl
             ) from None
 
         # Custom checks return True for VALID values, but we need True for INVALID.
-        return _evaluate_mask(nws, ~nw_result, max_samples)
+        return _evaluate_mask(nws, _failing_mask(nw_result), max_samples)
 
     # Built-in checks: each lambda returns a mask where True = FAILING value.
-    # The ~ operator inverts comparison results (e.g., ~(x > 0) means "not greater than 0").
+    # _failing_mask inverts a validity mask (e.g. x > 0) into "not greater than 0".
     check_masks = {
-        "gt": lambda: ~(nws > check_value),
-        "ge": lambda: ~(nws >= check_value),
-        "lt": lambda: ~(nws < check_value),
-        "le": lambda: ~(nws <= check_value),
-        "between": lambda: ~((nws >= check_value[0]) & (nws <= check_value[1])),
+        "gt": lambda: _failing_mask(nws > check_value),
+        "ge": lambda: _failing_mask(nws >= check_value),
+        "lt": lambda: _failing_mask(nws < check_value),
+        "le": lambda: _failing_mask(nws <= check_value),
+        "between": lambda: _failing_mask((nws >= check_value[0]) & (nws <= check_value[1])),
         "eq": lambda: nws != check_value,
         "ne": lambda: nws == check_value,
-        "isin": lambda: ~nws.is_in(check_value),
+        "isin": lambda: _failing_mask(nws.is_in(check_value)),
         "notin": lambda: nws.is_in(check_value),
         "notnull": lambda: nws.is_null(),  # noqa: PLW0108
-        "str_regex": lambda: ~nws.str.contains(f"^(?:{check_value})"),
-        "str_startswith": lambda: ~nws.str.starts_with(check_value),
-        "str_endswith": lambda: ~nws.str.ends_with(check_value),
-        "str_contains": lambda: ~nws.str.contains(check_value, literal=True),
-        "str_length": lambda: ~((nws.str.len_chars() >= check_value[0]) & (nws.str.len_chars() <= check_value[1])),
+        "str_regex": lambda: _failing_mask(nws.str.contains(check_value)),
+        "str_startswith": lambda: _failing_mask(nws.str.starts_with(check_value)),
+        "str_endswith": lambda: _failing_mask(nws.str.ends_with(check_value)),
+        "str_contains": lambda: _failing_mask(nws.str.contains(check_value, literal=True)),
+        "str_length": lambda: _failing_mask(
+            (nws.str.len_chars() >= check_value[0]) & (nws.str.len_chars() <= check_value[1])
+        ),
     }
 
     if check_name not in check_masks:

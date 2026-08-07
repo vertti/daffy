@@ -16,20 +16,27 @@ class ValidationContext:
     func_name: str = ""
     param_name: str | None = None
     is_return_value: bool = False
+    nw_df: Any = field(default=None, repr=False)
 
-    nw_df: Any = field(init=False, repr=False)
     columns: tuple[str, ...] = field(init=False)
     column_set: frozenset[str] = field(init=False)
     row_count: int = field(init=False)
-    schema: dict[str, Any] = field(init=False)
+    _schema: dict[str, Any] | None = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
-        nw_df = nw.from_native(self.df, eager_only=True)
+        nw_df = self.nw_df if self.nw_df is not None else nw.from_native(self.df, eager_only=True)
         object.__setattr__(self, "nw_df", nw_df)
         object.__setattr__(self, "columns", tuple(nw_df.columns))
         object.__setattr__(self, "column_set", frozenset(nw_df.columns))
         object.__setattr__(self, "row_count", nw_df.shape[0])
-        object.__setattr__(self, "schema", dict(nw_df.schema))
+        object.__setattr__(self, "_schema", None)
+
+    @property
+    def schema(self) -> dict[str, Any]:
+        """Column dtypes, resolved on first use - only dtype validation needs them."""
+        if self._schema is None:
+            object.__setattr__(self, "_schema", dict(self.nw_df.schema))
+        return self._schema  # type: ignore[return-value]
 
     @property
     def param_info(self) -> str:

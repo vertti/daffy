@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## 3.0.0
+
+This release removes two pieces of hidden magic and makes validation roughly three times cheaper.
+Mutation testing found all three behavior changes: the test suite asserted none of them, and the
+documentation described none of them.
+
+**Migrating:** anchor any unanchored regex you relied on (`r"\d+"` → `r"^\d+"`, `r/Price_\d+/` →
+`r/^Price_\d+/`), and add `nullable=False` to columns where you were relying on a null failing a
+value check.
+
+### Changed
+
+- **Behavior change:** value checks no longer force nulls to count as failures. Daffy used to rewrite null comparison results into violations; it now leaves each backend's semantics intact, so on Polars, PyArrow and Pandas nullable dtypes a comparison against null is "unknown" and is not reported. Pandas float `NaN` compares as `False` and still fails. Use `nullable=False` or the `notnull` check to constrain nulls explicitly — those behave identically on every backend.
+- **Behavior change:** regex column patterns (`"r/pattern/"`) now match anywhere in the column name instead of only at the start, so `r/Price_\d+/` also matches `Total_Price_1`. Anchor the pattern yourself (`r/^Price_\d+/`) to keep the old meaning. This makes column patterns and `str_regex` follow the same rule.
+- **Behavior change:** `str_regex` now applies the pattern as written instead of silently anchoring it at the start of the value. `{"str_regex": r"\d+"}` used to mean "starts with digits" and now means "contains digits"; add the anchor yourself (`r"^\d+"`, or `r"^\d+$"` for a full match) to keep the old meaning. Patterns that were already anchored are unaffected.
+
+### Fixed
+
+- Parameterised dtypes can now be declared by base name: `{"created_at": "datetime"}` matches any time unit or time zone, and the same applies to `duration`, `list`, `struct` and `enum`. Previously the only accepted spelling was the full internal repr (`"datetime(time_unit='ns', time_zone=none)"`). Spelling the parameters out still constrains them.
+- String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls
+
+### Performance
+
+- Per-call validation overhead cut by roughly 5x: `@df_in(columns=...)` on a 100-row Pandas frame went from ~212µs to ~41µs, `@df_in(min_rows=...)` from ~216µs to ~44µs. Configuration is now resolved in one lookup per call instead of one per setting, the DataFrame is converted to Narwhals once instead of three times, and column dtypes are only read when a dtype constraint needs them.
+
+### Removed
+
+- `daffy.config.get_strict`, `get_lazy`, `get_strict_specs` and `get_allow_empty` — internal helpers superseded by `resolve_decorator_settings`. They were never exported from the `daffy` package.
+
+### Documentation
+
+- Documented null handling per backend, `str_regex` anchoring, how to declare parameterised dtypes, and that regex syntax support depends on the backend's own engine
+
 ## 2.8.0
 
 ### Changed

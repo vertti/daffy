@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from daffy.dataframe_types import IntoDataFrameT
     from daffy.validation import ColumnsDef
 
-from daffy.config import get_allow_empty, get_lazy, get_strict, get_strict_specs
+from daffy.config import resolve_decorator_settings
 from daffy.utils import (
     ParameterResolver,
     assert_is_dataframe,
@@ -78,6 +78,7 @@ def _run_validations(
     allow_empty: bool | None,
     param_name: str | None,
     is_return_value: bool,
+    nw_df: Any = None,
 ) -> None:
     """Run all validations on a DataFrame using the validation pipeline."""
     ctx = ValidationContext(
@@ -85,19 +86,21 @@ def _run_validations(
         func_name=func_name,
         param_name=param_name,
         is_return_value=is_return_value,
+        nw_df=nw_df,
     )
 
+    settings = resolve_decorator_settings(strict, lazy, allow_empty)
     pipeline = build_validation_pipeline(
         columns=columns,
-        strict=get_strict(strict),
-        strict_specs=get_strict_specs(),
-        lazy=get_lazy(lazy),
+        strict=settings.strict,
+        strict_specs=settings.strict_specs,
+        lazy=settings.lazy,
         composite_unique=composite_unique,
         row_validator=row_validator,
         min_rows=min_rows,
         max_rows=max_rows,
         exact_rows=exact_rows,
-        allow_empty=get_allow_empty(allow_empty),
+        allow_empty=settings.allow_empty,
         df_columns=list(ctx.columns),
     )
     pipeline.run(ctx)
@@ -153,7 +156,7 @@ def df_out(
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> IntoDataFrameT:
             result = func(*args, **kwargs)
-            assert_is_dataframe(result, "return type")
+            nw_df = assert_is_dataframe(result, "return type")
             _run_validations(
                 result,
                 getattr(func, "__name__", "<unknown>"),
@@ -168,6 +171,7 @@ def df_out(
                 allow_empty,
                 param_name=None,
                 is_return_value=True,
+                nw_df=nw_df,
             )
             return result
 
@@ -270,8 +274,8 @@ def df_in(
 
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> InReturnT:
-            df, param_name = resolver.resolve(name, *args, **kwargs)
-            assert_is_dataframe(df, "parameter type")
+            df, param_name, resolved_nw_df = resolver.resolve(name, *args, **kwargs)
+            nw_df = assert_is_dataframe(df, "parameter type", resolved_nw_df)
             _run_validations(
                 df,
                 getattr(func, "__name__", "<unknown>"),
@@ -286,6 +290,7 @@ def df_in(
                 allow_empty,
                 param_name=param_name,
                 is_return_value=False,
+                nw_df=nw_df,
             )
             return func(*args, **kwargs)
 
@@ -316,7 +321,7 @@ def df_log(
         @wraps(func)
         def wrapper(*args: Any, **kwargs: Any) -> LogReturnT:
             func_name = getattr(func, "__name__", "<unknown>")
-            df, _ = resolver.resolve(None, *args, **kwargs)
+            df, _, _ = resolver.resolve(None, *args, **kwargs)
             log_dataframe_input(level, func_name, df, include_dtypes)
             result = func(*args, **kwargs)
             log_dataframe_output(level, func_name, result, include_dtypes)

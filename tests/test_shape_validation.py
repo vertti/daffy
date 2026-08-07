@@ -80,9 +80,9 @@ class TestRowConstraints:
 
 class TestAllowEmpty:
     def test_config_rejects_empty(self, make_df: DataFrameFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-        from daffy import decorators
+        from daffy import config
 
-        monkeypatch.setattr(decorators, "get_allow_empty", lambda x: False if x is None else x)
+        monkeypatch.setattr(config, "get_config", lambda: {**config.load_config(), "allow_empty": False})
 
         @df_out()
         def f() -> Any:
@@ -92,9 +92,9 @@ class TestAllowEmpty:
             f()
 
     def test_decorator_overrides_config(self, make_df: DataFrameFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-        from daffy import decorators
+        from daffy import config
 
-        monkeypatch.setattr(decorators, "get_allow_empty", lambda x: False if x is None else x)
+        monkeypatch.setattr(config, "get_config", lambda: {**config.load_config(), "allow_empty": False})
 
         @df_out(allow_empty=True)
         def f() -> Any:
@@ -159,3 +159,15 @@ class TestInvalidConstraints:
                 @decorator(**kwargs)
                 def g(df: Any) -> Any:
                     pass
+
+    def test_accepts_min_rows_equal_to_max_rows(self, make_df: DataFrameFactory) -> None:
+        """An exact-size range is a legal bound, not a contradiction."""
+
+        @df_in(min_rows=2, max_rows=2)
+        def process(df: Any) -> Any:
+            return df
+
+        process(make_df({"a": [1, 2]}))
+
+        with pytest.raises(AssertionError, match="max_rows=2"):
+            process(make_df({"a": [1, 2, 3]}))

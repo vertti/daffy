@@ -160,6 +160,19 @@ Map column names to expected dtypes:
 columns={"a": "int64", "b": "object", "c": "float64"}
 ```
 
+Parameterised dtypes can be declared by base name, which matches whatever parameters the column
+carries. Spell the parameters out when you want to constrain them:
+
+```python
+columns={"created_at": "datetime"}                                  # any time unit or time zone
+columns={"created_at": "datetime(time_unit='ns', time_zone=none)"}  # exactly this one
+columns={"tags": "list", "address": "struct", "grade": "enum"}
+```
+
+Note that `"object"` and `"str"` both mean "string" — a Pandas `object` column is reported as a
+string regardless of what it holds, so `{"a": "str"}` will not catch an `object` column containing
+numbers or dicts.
+
 ### Rich Column Spec
 
 Full control over column validation:
@@ -214,6 +227,20 @@ Available built-in checks for the `checks` parameter:
 | `str_length`     | `(lo, hi)` | String length in range     |
 
 Custom checks are also supported by passing a callable as the check value.
+
+`str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
+yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
+
+The pattern is handed to the DataFrame library's own regex engine, so advanced syntax is not
+portable. Lookarounds and backreferences work on Pandas (Python `re`) but raise `ComputeError` on
+Polars and `ArrowInvalid` on PyArrow. Stick to basic syntax if your code runs on more than one
+backend.
+
+Checks constrain values, and a null is not a value. Daffy does not rewrite null comparison
+results, so null handling follows your backend: on Polars, PyArrow and Pandas nullable dtypes
+a comparison against null is "unknown" and is not reported, while Pandas float `NaN` compares
+as `False` and therefore does fail. Use `nullable=False` or the `notnull` check to constrain
+nulls explicitly — those work identically everywhere.
 
 **Examples:**
 

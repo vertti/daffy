@@ -38,10 +38,11 @@ class TestCustomCheckFunctions:
         assert fail_count == 0
         assert samples == []
 
-    def test_custom_check_with_nulls_treated_as_failure(self) -> None:
+    def test_custom_check_with_pandas_float_nan(self) -> None:
+        """NaN compares as False in Pandas float columns, so it fails the custom check natively."""
         series = pd.Series([1, None, 3])
         fail_count, _samples = apply_check(series, "positive", lambda s: s > 0)
-        assert fail_count == 1  # null is treated as failure
+        assert fail_count == 1
 
     def test_custom_check_max_samples(self) -> None:
         series = pd.Series([-1, -2, -3, -4, -5, -6, -7, -8, -9, -10])

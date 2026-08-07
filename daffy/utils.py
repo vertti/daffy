@@ -9,26 +9,33 @@ from typing import TYPE_CHECKING, Any
 import narwhals as nw
 
 from daffy.dataframe_types import get_available_library_names
-from daffy.narwhals_compat import is_supported_dataframe
+from daffy.narwhals_compat import is_supported_dataframe, to_nw_dataframe
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def assert_is_dataframe(obj: Any, context: str) -> None:
+def assert_is_dataframe(obj: Any, context: str, nw_df: Any = None) -> Any:
     """Verify that an object is a supported DataFrame (Pandas, Polars, Modin, or PyArrow).
 
     Args:
         obj: Object to validate
         context: Context string for the error message (e.g., "parameter type", "return type")
+        nw_df: Narwhals view of obj when the caller already has one, to skip re-converting
+
+    Returns:
+        The Narwhals view of the DataFrame, so callers do not convert it a second time.
 
     Raises:
         AssertionError: If obj is not a DataFrame
 
     """
-    if not is_supported_dataframe(obj):
+    if nw_df is None:
+        nw_df = to_nw_dataframe(obj)
+    if nw_df is None:
         libs_str = " or ".join(get_available_library_names())
         raise AssertionError(f"Wrong {context}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead.")
+    return nw_df
 
 
 class ParameterResolver:
@@ -46,22 +53,29 @@ class ParameterResolver:
         self.var_pos_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_POSITIONAL), None)
         self.var_kw_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_KEYWORD), None)
 
-    def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None]:  # noqa: C901, PLR0911, PLR0912
-        """Extract a parameter value and its name from function arguments."""
+    def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None, Any]:  # noqa: C901, PLR0911, PLR0912
+        """Extract a parameter value and its name from function arguments.
+
+        Returns (value, parameter name, Narwhals view). The Narwhals view is None unless
+        searching for the DataFrame already produced one, in which case callers reuse it
+        instead of converting the same frame again.
+        """
         if not name:
             # 1. Search positional arguments
             for i, arg in enumerate(args):
-                if is_supported_dataframe(arg):
+                nw_df = to_nw_dataframe(arg)
+                if nw_df is not None:
                     if i < len(self.param_names):
-                        return arg, self.param_names[i]
-                    return arg, self.var_pos_name
+                        return arg, self.param_names[i], nw_df
+                    return arg, self.var_pos_name, nw_df
 
             # 2. Search keyword arguments
             for kw_name, kw_val in kwargs.items():
-                if is_supported_dataframe(kw_val):
+                nw_df = to_nw_dataframe(kw_val)
+                if nw_df is not None:
                     # If it's explicitly in the signature, return that name.
                     # Otherwise, if it's passed as kwargs but VAR_KEYWORD exists, return kw_name.
-                    return kw_val, kw_name
+                    return kw_val, kw_name, nw_df
 
             # 3. Fallback to first argument if no dataframe found
             value = args[0] if args else next(iter(kwargs.values()), None)
@@ -69,10 +83,10 @@ class ParameterResolver:
                 param_name = self.param_names[0] if self.param_names else None
             else:
                 param_name = next(iter(kwargs.keys()), None)
-            return value, param_name
+            return value, param_name, None
 
         if name in kwargs:
-            return kwargs[name], name
+            return kwargs[name], name, None
 
         try:
             parameter_location = self.param_names.index(name)
@@ -86,18 +100,18 @@ class ParameterResolver:
 
         if kind == inspect.Parameter.KEYWORD_ONLY:
             if default is not inspect.Parameter.empty:
-                return default, name
+                return default, name, None
             raise ValueError(f"Required keyword-only parameter '{name}' not provided in arguments.")
 
         if parameter_location >= len(args):
             if default is not inspect.Parameter.empty:
-                return default, name
+                return default, name, None
             raise ValueError(
                 f"Parameter '{name}' not found in function arguments. "
                 f"Expected at position {parameter_location}, but only {len(args)} positional arguments provided."
             )
 
-        return args[parameter_location], name
+        return args[parameter_location], name, None
 
 
 def describe_dataframe(df: Any, include_dtypes: bool = False) -> str:

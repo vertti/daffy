@@ -20,6 +20,10 @@ In this example:
 - The DataFrame must have a column named exactly "Brand"
 - The DataFrame must have at least one column matching the pattern "Price_\d+" (e.g., "Price_1", "Price_2", etc.)
 
+The pattern is applied as written and matches anywhere in the column name, so `r/Price_\d+/` also
+matches `Total_Price_1`. Anchor it yourself when you need a tighter match: `r/^Price_\d+/` requires
+the name to start with the pattern, and `r/^Price_\d+$/` requires the whole name to match.
+
 If no columns match a regex pattern, an error is raised:
 
 ```
@@ -310,6 +314,20 @@ def process_data(df):
 | `str_contains`   | string     | String contains substring  | `{"str_contains": "@"}`      |
 | `str_length`     | (min, max) | String length in range     | `{"str_length": (1, 100)}`   |
 
+`str_regex` applies your pattern as written: it matches anywhere in the value unless you anchor it
+yourself. Use `r"^\d+"` to require a match at the start and `r"^\d+$"` to require a full match.
+
+The pattern is handed to the DataFrame library's own regex engine, so advanced syntax is not
+portable. Lookarounds and backreferences work on Pandas (Python `re`) but raise `ComputeError` on
+Polars and `ArrowInvalid` on PyArrow. Stick to basic syntax if your code runs on more than one
+backend.
+
+Checks constrain values, and a null is not a value. Daffy does not rewrite null comparison
+results, so null handling follows your backend: on Polars, PyArrow and Pandas nullable dtypes
+a comparison against null is "unknown" and is not reported, while Pandas float `NaN` compares
+as `False` and therefore does fail. Use `nullable=False` or the `notnull` check to constrain
+nulls explicitly — those work identically everywhere.
+
 ### Multiple Checks
 
 You can combine multiple checks on a single column:
@@ -450,7 +468,7 @@ def process_inventory(df):
 
 If any rows fail validation, you'll get a detailed error message:
 
-```python
+```
 AssertionError: Row validation failed for 2 out of 100 rows:
 
   Row 5:

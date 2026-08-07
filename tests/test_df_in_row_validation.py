@@ -115,3 +115,28 @@ def test_df_in_without_row_validator() -> None:
 
     result = process_people(df)
     assert result.equals(df)
+
+
+class TestMaxErrorsBoundary:
+    """row_validation_max_errors caps how many failing rows are listed, not how many exist."""
+
+    @staticmethod
+    def _run_with_bad_rows(count: int) -> str:
+        @df_in(row_validator=PersonValidator)
+        def process_people(df: Any) -> Any:
+            return df
+
+        df = pd.DataFrame({"name": ["A"] * count, "age": [-5] * count})
+        with pytest.raises(AssertionError) as exc_info:
+            process_people(df)
+        return str(exc_info.value)
+
+    def test_lists_every_failing_row_up_to_the_limit(self) -> None:
+        message = self._run_with_bad_rows(5)
+        assert message.count("  Row ") == 5
+        assert message.startswith("Row validation failed for 5 out of 5 rows:")
+
+    def test_stops_listing_past_the_limit(self) -> None:
+        message = self._run_with_bad_rows(8)
+        assert message.count("  Row ") == 5
+        assert "at least" in message

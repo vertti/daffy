@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, NamedTuple
 
 import tomli
 
@@ -85,10 +85,13 @@ def _get_config_for_cwd(cwd: str) -> MappingProxyType[str, Any]:
 def get_config() -> MappingProxyType[str, Any]:
     """Get the daffy configuration, cached by current working directory.
 
+    Keyed on the unresolved working directory: resolving symlinks costs a syscall on
+    every validated call, and `find_config_file` resolves the path anyway on a cache
+    miss. Two aliases of the same directory get two cache entries with equal contents.
+
     Returns an immutable view of the configuration to prevent accidental modification.
     """
-    cwd = str(Path.cwd().resolve())
-    return _get_config_for_cwd(cwd)
+    return _get_config_for_cwd(str(Path.cwd()))
 
 
 def clear_config_cache() -> None:
@@ -96,11 +99,28 @@ def clear_config_cache() -> None:
     _get_config_for_cwd.cache_clear()
 
 
-def _get_bool_config(param: bool | None, key: str) -> bool:
-    """Return param if provided, otherwise config value."""
-    if param is not None:
-        return param
-    return bool(get_config()[key])
+class DecoratorSettings(NamedTuple):
+    """Settings resolved for one validation run."""
+
+    strict: bool
+    strict_specs: bool
+    lazy: bool
+    allow_empty: bool
+
+
+def resolve_decorator_settings(strict: bool | None, lazy: bool | None, allow_empty: bool | None) -> DecoratorSettings:
+    """Resolve the decorator settings with a single configuration lookup.
+
+    Reading the config resolves the current working directory, so doing it once per
+    validation instead of once per setting keeps that cost off the hot path.
+    """
+    config = get_config()
+    return DecoratorSettings(
+        strict=strict if strict is not None else bool(config[_KEY_STRICT]),
+        strict_specs=bool(config[_KEY_STRICT_SPECS]),
+        lazy=lazy if lazy is not None else bool(config[_KEY_LAZY]),
+        allow_empty=allow_empty if allow_empty is not None else bool(config[_KEY_ALLOW_EMPTY]),
+    )
 
 
 def _get_int_config(param: int | None, key: str, min_value: int = 1) -> int:
@@ -111,49 +131,6 @@ def _get_int_config(param: int | None, key: str, min_value: int = 1) -> int:
     return value
 
 
-def get_strict(strict_param: bool | None = None) -> bool:
-    """Get the strict mode setting, with explicit parameter taking precedence over configuration.
-
-    Args:
-        strict_param: Explicitly provided strict parameter value, or None to use config
-
-    Returns:
-        bool: The effective strict mode setting
-
-    """
-    return _get_bool_config(strict_param, _KEY_STRICT)
-
-
-def get_lazy(lazy_param: bool | None = None) -> bool:
-    """Get the lazy mode setting, with explicit parameter taking precedence over configuration.
-
-    When lazy=True, validation collects all errors before raising instead of stopping at the first.
-
-    Args:
-        lazy_param: Explicitly provided lazy parameter value, or None to use config
-
-    Returns:
-        bool: The effective lazy mode setting
-
-    """
-    return _get_bool_config(lazy_param, _KEY_LAZY)
-
-
-def get_strict_specs(strict_specs_param: bool | None = None) -> bool:
-    """Get strict_specs setting, with explicit parameter taking precedence over configuration.
-
-    When strict_specs=True, invalid column spec keys/types raise errors instead of being ignored.
-
-    Args:
-        strict_specs_param: Explicitly provided strict_specs value, or None to use config
-
-    Returns:
-        bool: The effective strict_specs setting
-
-    """
-    return _get_bool_config(strict_specs_param, _KEY_STRICT_SPECS)
-
-
 def get_row_validation_max_errors() -> int:
     """Get max_errors setting for row validation."""
     return _get_int_config(None, _KEY_ROW_VALIDATION_MAX_ERRORS)
@@ -162,18 +139,3 @@ def get_row_validation_max_errors() -> int:
 def get_checks_max_samples(max_samples: int | None = None) -> int:
     """Get max_samples setting for value checks."""
     return _get_int_config(max_samples, _KEY_CHECKS_MAX_SAMPLES)
-
-
-def get_allow_empty(allow_empty_param: bool | None = None) -> bool:
-    """Get the allow_empty setting, with explicit parameter taking precedence over configuration.
-
-    When allow_empty=False, empty DataFrames (0 rows) will raise an error.
-
-    Args:
-        allow_empty_param: Explicitly provided allow_empty parameter value, or None to use config
-
-    Returns:
-        bool: The effective allow_empty setting
-
-    """
-    return _get_bool_config(allow_empty_param, _KEY_ALLOW_EMPTY)

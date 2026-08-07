@@ -165,15 +165,15 @@ class TestLazyValidationConfig:
         clear_config_cache()
 
     def test_lazy_defaults_to_false(self) -> None:
-        from daffy.config import get_lazy
+        from daffy.config import resolve_decorator_settings
 
-        assert get_lazy() is False
+        assert resolve_decorator_settings(None, None, None).lazy is False
 
     def test_lazy_param_overrides_config(self) -> None:
-        from daffy.config import get_lazy
+        from daffy.config import resolve_decorator_settings
 
-        assert get_lazy(True) is True
-        assert get_lazy(False) is False
+        assert resolve_decorator_settings(None, True, None).lazy is True
+        assert resolve_decorator_settings(None, False, None).lazy is False
 
 
 class TestLazyValidationErrorMessages:

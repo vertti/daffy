@@ -1,10 +1,43 @@
 """Tests for value checks."""
 
+from typing import Any
+
 import narwhals as nw
 import pandas as pd
+import polars as pl
+import pyarrow as pa
 import pytest
 
 from daffy.checks import apply_check, validate_checks
+
+
+def numeric_with_null(backend: str) -> Any:
+    """Build [1, null, 3] on the requested backend."""
+    return {
+        "pandas-float": lambda: pd.Series([1.0, None, 3.0]),
+        "pandas-nullable-int": lambda: pd.Series([1, None, 3], dtype="Int64"),
+        "polars": lambda: pl.Series([1, None, 3]),
+        "pyarrow": lambda: pa.chunked_array([[1, None, 3]]),
+    }[backend]()
+
+
+def strings_with_null(backend: str) -> Any:
+    """Build ["ab1x", null, "ab2x"] on the requested backend."""
+    return {
+        "pandas-object": lambda: pd.Series(["ab1x", None, "ab2x"]),
+        "pandas-string": lambda: pd.Series(["ab1x", None, "ab2x"], dtype="string"),
+        "polars": lambda: pl.Series(["ab1x", None, "ab2x"]),
+        "pyarrow": lambda: pa.chunked_array([["ab1x", None, "ab2x"]]),
+    }[backend]()
+
+
+NUMERIC_BACKENDS = ["pandas-float", "pandas-nullable-int", "polars", "pyarrow"]
+STRING_BACKENDS = ["pandas-object", "pandas-string", "polars", "pyarrow"]
+
+# Backends whose nulls are three-valued: a comparison against null yields "unknown",
+# which is not a violation. Pandas float NaN is the exception - it compares as False,
+# so NaN fails comparisons natively.
+THREE_VALUED_NUMERIC = ["pandas-nullable-int", "polars", "pyarrow"]
 
 
 class TestComparisonChecks:
@@ -54,7 +87,8 @@ class TestComparisonChecks:
         assert fail_count == 1
         assert samples == [15]
 
-    def test_null_values_treated_as_failures(self) -> None:
+    def test_pandas_float_nan_fails_comparison(self) -> None:
+        """NaN compares as False in Pandas float columns, so it fails natively."""
         series = pd.Series([1, None, 3])
         fail_count, _samples = apply_check(series, "gt", 0)
         assert fail_count == 1
@@ -187,6 +221,30 @@ class TestStrRegexCheck:
         fail_count, samples = apply_check(series, "str_regex", r"^[^@]+@[^@]+\.[^@]+$")
         assert fail_count == 1
         assert samples == ["invalid"]
+
+    def test_str_regex_matches_anywhere_in_the_value(self) -> None:
+        series = pd.Series(["abc123", "abc"])
+        fail_count, samples = apply_check(series, "str_regex", r"\d+")
+        assert fail_count == 1
+        assert samples == ["abc"]
+
+    def test_str_regex_honours_caller_start_anchor(self) -> None:
+        series = pd.Series(["123abc", "abc123"])
+        fail_count, samples = apply_check(series, "str_regex", r"^\d+")
+        assert fail_count == 1
+        assert samples == ["abc123"]
+
+    def test_str_regex_honours_caller_full_match_anchors(self) -> None:
+        series = pd.Series(["123", "123abc"])
+        fail_count, samples = apply_check(series, "str_regex", r"^\d+$")
+        assert fail_count == 1
+        assert samples == ["123abc"]
+
+    def test_str_regex_alternation_is_not_rewritten(self) -> None:
+        series = pd.Series(["xb", "c"])
+        fail_count, samples = apply_check(series, "str_regex", "a|b")
+        assert fail_count == 1
+        assert samples == ["c"]
 
 
 class TestStrStartswithCheck:
@@ -324,6 +382,73 @@ class TestEdgeCases:
         series = pd.Series([None, None, None])
         fail_count, _samples = apply_check(series, "gt", 0)
         assert fail_count == 3
+
+
+class TestNullSemanticsFollowTheBackend:
+    """Checks constrain values; a null is not a value.
+
+    Daffy does not rewrite null comparison results. On backends with three-valued logic
+    (Polars, PyArrow, Pandas nullable dtypes) comparing against a null yields "unknown",
+    which is not a violation. Pandas float NaN is the exception: it compares as False
+    natively, so NaN does fail a comparison there. Use `nullable=False` or the `notnull`
+    check to constrain nulls explicitly.
+    """
+
+    @pytest.mark.parametrize("backend", THREE_VALUED_NUMERIC)
+    @pytest.mark.parametrize(
+        ("check_name", "check_value"),
+        [("gt", 0), ("ge", 1), ("lt", 9), ("le", 9), ("between", (0, 9))],
+    )
+    def test_comparison_ignores_null_on_three_valued_backends(
+        self, backend: str, check_name: str, check_value: Any
+    ) -> None:
+        fail_count, _samples = apply_check(numeric_with_null(backend), check_name, check_value)
+        assert fail_count == 0
+
+    @pytest.mark.parametrize(("check_name", "check_value"), [("gt", 0), ("between", (0, 9))])
+    def test_comparison_fails_nan_on_pandas_float(self, check_name: str, check_value: Any) -> None:
+        fail_count, _samples = apply_check(numeric_with_null("pandas-float"), check_name, check_value)
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("backend", NUMERIC_BACKENDS)
+    def test_ne_ignores_null_everywhere(self, backend: str) -> None:
+        fail_count, _samples = apply_check(numeric_with_null(backend), "ne", 9)
+        assert fail_count == 0
+
+    @pytest.mark.parametrize("backend", NUMERIC_BACKENDS)
+    def test_notin_ignores_null_everywhere(self, backend: str) -> None:
+        fail_count, _samples = apply_check(numeric_with_null(backend), "notin", [9])
+        assert fail_count == 0
+
+    @pytest.mark.parametrize("backend", NUMERIC_BACKENDS)
+    def test_notnull_reports_null_everywhere(self, backend: str) -> None:
+        fail_count, _samples = apply_check(numeric_with_null(backend), "notnull", True)
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("backend", THREE_VALUED_NUMERIC)
+    def test_custom_check_ignores_null_on_three_valued_backends(self, backend: str) -> None:
+        fail_count, _samples = apply_check(numeric_with_null(backend), "positive", lambda s: s > 0)
+        assert fail_count == 0
+
+    @pytest.mark.parametrize("backend", STRING_BACKENDS)
+    @pytest.mark.parametrize(
+        ("check_name", "check_value"),
+        [
+            ("str_regex", r"ab\dx"),
+            ("str_startswith", "ab"),
+            ("str_endswith", "x"),
+            ("str_contains", "b"),
+        ],
+    )
+    def test_string_check_ignores_null(self, backend: str, check_name: str, check_value: Any) -> None:
+        fail_count, _samples = apply_check(strings_with_null(backend), check_name, check_value)
+        assert fail_count == 0
+
+    @pytest.mark.parametrize("backend", STRING_BACKENDS)
+    def test_string_check_does_not_crash_on_pandas_object_nulls(self, backend: str) -> None:
+        """Regression: `~` on a pandas object-dtype mask holding None raised TypeError."""
+        fail_count, _samples = apply_check(strings_with_null(backend), "str_regex", r"nomatch")
+        assert fail_count == 2
 
 
 class TestValidateChecks:
