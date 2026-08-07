@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 3.0.0
+
+This release removes two pieces of hidden magic and makes validation roughly three times cheaper.
+All three behavior changes were found by mutation-testing the suite: each was behaviour nothing
+pinned and nothing documented.
+
+**Migrating:** anchor any unanchored regex you relied on (`r"\d+"` → `r"^\d+"`, `r/Price_\d+/` →
+`r/^Price_\d+/`), and add `nullable=False` to columns where you were relying on a null failing a
+value check.
 
 ### Changed
 
@@ -15,9 +23,17 @@ All notable changes to this project will be documented in this file.
 - Parameterised dtypes can now be declared by base name: `{"created_at": "datetime"}` matches any time unit or time zone, and the same applies to `duration`, `list`, `struct` and `enum`. Previously the only accepted spelling was the full internal repr (`"datetime(time_unit='ns', time_zone=none)"`). Spelling the parameters out still constrains them.
 - String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls
 
+### Performance
+
+- Per-call validation overhead cut by roughly 3x: `@df_in(columns=...)` on a 100-row Pandas frame went from ~212µs to ~66µs, `@df_in(min_rows=...)` from ~216µs to ~69µs. Configuration is now resolved in one lookup per call instead of one per setting, the DataFrame is converted to Narwhals once instead of three times, and column dtypes are only read when a dtype constraint needs them.
+
+### Removed
+
+- `daffy.config.get_strict`, `get_lazy`, `get_strict_specs` and `get_allow_empty` — internal helpers superseded by `resolve_decorator_settings`. They were never exported from the `daffy` package.
+
 ### Documentation
 
-- Documented `str_regex` anchoring (the caller's pattern is applied as written) and that nulls count as failures for every check
+- Documented null handling per backend, `str_regex` anchoring, how to declare parameterised dtypes, and that regex syntax support depends on the backend's own engine
 
 ## 2.8.0
 
