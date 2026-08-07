@@ -413,3 +413,42 @@ class TestStrictWithoutColumnConstraints:
             return df
 
         assert process(pd.DataFrame({"a": [1], "price_eur": [1.0]})) is not None
+
+
+class TestConstraintKeysValidatedAtDecoration:
+    """A misspelled constraint used to be accepted and then do nothing at all."""
+
+    @pytest.mark.parametrize("decorator", [df_in, df_out])
+    @pytest.mark.parametrize("typo", ["nullabel", "uniqe", "dtpye", "requred"])
+    def test_unknown_constraint_is_rejected(self, decorator: Any, typo: str) -> None:
+        with pytest.raises(ValueError, match=f"Unknown constraint\\(s\\) \\['{typo}'\\] for column 'price'"):
+            decorator(columns={"price": {typo: False}})
+
+    def test_checks_written_without_the_checks_key_are_rejected(self) -> None:
+        """{"price": {"gt": 0}} looks reasonable but nests nothing under `checks`."""
+        with pytest.raises(ValueError, match="Unknown constraint"):
+            df_in(columns={"price": {"gt": 0}})
+
+    def test_error_lists_the_valid_constraints(self) -> None:
+        with pytest.raises(ValueError, match="dtype, nullable, required, unique"):
+            df_in(columns={"price": {"nope": 1}})
+
+    @pytest.mark.parametrize("constraint", ["nullable", "unique", "required"])
+    @pytest.mark.parametrize("bad_value", ["False", 0, 1, None])
+    def test_non_boolean_constraint_value_is_rejected(self, constraint: str, bad_value: Any) -> None:
+        with pytest.raises(TypeError, match=f"Constraint '{constraint}' for column 'price' must be True or False"):
+            df_in(columns={"price": {constraint: bad_value}})
+
+    def test_a_full_valid_spec_is_accepted(self) -> None:
+        @df_in(columns={"price": {"dtype": "int64", "nullable": False, "unique": True, "checks": {"gt": 0}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"price": [1, 2]}))["price"]) == [1, 2]
+
+    def test_constraint_keys_come_from_the_typed_dict(self) -> None:
+        """The valid set is derived, so it cannot drift from ColumnConstraints."""
+        from daffy.validation import ColumnConstraints
+        from daffy.validators.spec_parser import CONSTRAINT_KEYS
+
+        assert set(ColumnConstraints.__annotations__) == CONSTRAINT_KEYS
