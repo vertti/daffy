@@ -6,6 +6,8 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from daffy.validation import ColumnConstraints
+
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
@@ -27,6 +29,24 @@ class ParsedColumnSpec:
         return self.required_columns + self.optional_columns
 
 
+CONSTRAINT_KEYS: frozenset[str] = frozenset(ColumnConstraints.__annotations__)
+
+
+def assert_known_constraints(col_name: str, constraints: dict[str, Any]) -> None:
+    """Reject constraint keys daffy does not implement.
+
+    A typo like `{"nullabel": False}` used to be accepted and then do nothing, which
+    means a guard the user believes is in place never runs. Deriving the valid set from
+    ColumnConstraints keeps this list from drifting out of sync with the TypedDict.
+    """
+    unknown = set(constraints) - CONSTRAINT_KEYS
+    if unknown:
+        valid = ", ".join(sorted(CONSTRAINT_KEYS))
+        raise ValueError(
+            f"Unknown constraint(s) {sorted(unknown)} for column '{col_name}'. Valid constraints are: {valid}"
+        )
+
+
 def _get_col_name(col_spec: Any) -> str | None:
     """Get column name from specification, or None if invalid.
 
@@ -44,6 +64,8 @@ def _get_col_name(col_spec: Any) -> str | None:
 
 def _parse_dict_constraints(col_name: str, constraints: dict[str, Any], result: ParsedColumnSpec) -> None:
     """Parse a dict constraint specification for a column."""
+    assert_known_constraints(col_name, constraints)
+
     is_required = constraints.get("required", True)
     if is_required:
         result.required_columns.append(col_name)

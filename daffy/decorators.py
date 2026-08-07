@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Mapping
 from functools import wraps
 from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar, overload
 
@@ -24,6 +25,7 @@ from daffy.utils import (
 )
 from daffy.validators.builder import build_validation_pipeline
 from daffy.validators.context import ValidationContext
+from daffy.validators.spec_parser import assert_known_constraints
 
 
 def _validate_composite_unique(composite_unique: list[list[str]] | None) -> None:
@@ -44,31 +46,52 @@ def _validate_composite_unique(composite_unique: list[list[str]] | None) -> None
                 raise TypeError(f"composite_unique[{i}][{j}] must be a string, got {type(col).__name__}")
 
 
-def _validate_check_names(columns: ColumnsDef) -> None:
-    """Reject unknown built-in check names at decoration time.
+_BOOLEAN_CONSTRAINTS = ("nullable", "unique", "required")
+
+
+def _validate_check_names(column: str, checks: Any) -> None:
+    """Reject unknown built-in check names.
 
     Mirrors `apply_check`: a callable check value is a custom check and may carry any
-    name, so only non-callable values are matched against the built-ins. Without this,
-    a typo like `{"checks": {"gtt": 0}}` decorates cleanly and only fails on the first
-    call with data.
+    name, so only non-callable values are matched against the built-ins.
     """
-    if not isinstance(columns, dict):
+    if not isinstance(checks, dict):
+        return
+
+    for check_name, check_value in checks.items():
+        if callable(check_value) or check_name in BUILTIN_CHECK_NAMES:
+            continue
+        valid = ", ".join(sorted(BUILTIN_CHECK_NAMES))
+        raise ValueError(
+            f"Unknown check '{check_name}' for column '{column}'. "
+            f"Pass a callable to define a custom check, or use one of: {valid}"
+        )
+
+
+def _validate_column_spec(columns: ColumnsDef) -> None:
+    """Reject unusable column specs at decoration time.
+
+    Everything here used to be accepted and then quietly do nothing, which is the worst
+    outcome for a validation library: the decorator reads as a guarantee while no
+    validation runs. Catching it at decoration puts the error next to the mistake.
+    """
+    if not isinstance(columns, Mapping):
         return
 
     for column, spec in columns.items():
         if not isinstance(spec, dict):
             continue
-        checks = spec.get("checks")
-        if not isinstance(checks, dict):
-            continue
-        for check_name, check_value in checks.items():
-            if callable(check_value) or check_name in BUILTIN_CHECK_NAMES:
-                continue
-            valid = ", ".join(sorted(BUILTIN_CHECK_NAMES))
-            raise ValueError(
-                f"Unknown check '{check_name}' for column '{column}'. "
-                f"Pass a callable to define a custom check, or use one of: {valid}"
-            )
+
+        assert_known_constraints(str(column), spec)
+
+        for key in _BOOLEAN_CONSTRAINTS:
+            if key in spec and not isinstance(spec[key], bool):
+                raise TypeError(
+                    f"Constraint '{key}' for column '{column}' must be True or False, "
+                    f"got {type(spec[key]).__name__}: {spec[key]!r}"
+                )
+
+        _validate_check_names(str(column), spec.get("checks"))
 
 
 def _validate_shape_constraints(
@@ -182,7 +205,7 @@ def df_out(
         Callable: Decorated function with preserved DataFrame return type
 
     """
-    _validate_check_names(columns)
+    _validate_column_spec(columns)
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
@@ -300,7 +323,7 @@ def df_in(
         columns = name
         name = None
 
-    _validate_check_names(columns)
+    _validate_column_spec(columns)
     _validate_composite_unique(composite_unique)
     _validate_shape_constraints(min_rows, max_rows, exact_rows)
 
