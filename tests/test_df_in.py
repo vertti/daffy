@@ -6,6 +6,7 @@ import polars as pl
 import pytest
 
 from daffy import df_in
+from daffy.config import get_config
 from daffy.utils import ParameterResolver
 from tests.conftest import IntoDataFrame, cars, extended_cars
 
@@ -408,7 +409,7 @@ def test_check_columns_invalid_column_type_in_list_raises_when_strict_specs_enab
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
 
     with (
-        patch("daffy.decorators.get_strict_specs", return_value=True),
+        patch("daffy.config.get_config", return_value={**get_config(), "strict_specs": True}),
         pytest.raises(TypeError, match="Invalid column spec at index 1"),
     ):
         process(df)
@@ -437,7 +438,7 @@ def test_check_columns_invalid_column_key_in_dict_raises_when_strict_specs_enabl
     df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
 
     with (
-        patch("daffy.decorators.get_strict_specs", return_value=True),
+        patch("daffy.config.get_config", return_value={**get_config(), "strict_specs": True}),
         pytest.raises(TypeError, match="Invalid column key at index 1"),
     ):
         process(df)

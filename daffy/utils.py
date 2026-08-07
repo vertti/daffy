@@ -9,26 +9,31 @@ from typing import TYPE_CHECKING, Any
 import narwhals as nw
 
 from daffy.dataframe_types import get_available_library_names
-from daffy.narwhals_compat import is_supported_dataframe
+from daffy.narwhals_compat import is_supported_dataframe, to_nw_dataframe
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
 
-def assert_is_dataframe(obj: Any, context: str) -> None:
+def assert_is_dataframe(obj: Any, context: str) -> Any:
     """Verify that an object is a supported DataFrame (Pandas, Polars, Modin, or PyArrow).
 
     Args:
         obj: Object to validate
         context: Context string for the error message (e.g., "parameter type", "return type")
 
+    Returns:
+        The Narwhals view of the DataFrame, so callers do not convert it a second time.
+
     Raises:
         AssertionError: If obj is not a DataFrame
 
     """
-    if not is_supported_dataframe(obj):
+    nw_df = to_nw_dataframe(obj)
+    if nw_df is None:
         libs_str = " or ".join(get_available_library_names())
         raise AssertionError(f"Wrong {context}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead.")
+    return nw_df
 
 
 class ParameterResolver:

@@ -5,7 +5,7 @@ from __future__ import annotations
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any
+from typing import Any, NamedTuple
 
 import tomli
 
@@ -85,15 +85,42 @@ def _get_config_for_cwd(cwd: str) -> MappingProxyType[str, Any]:
 def get_config() -> MappingProxyType[str, Any]:
     """Get the daffy configuration, cached by current working directory.
 
+    Keyed on the unresolved working directory: resolving symlinks costs a syscall on
+    every validated call, and `find_config_file` resolves the path anyway on a cache
+    miss. Two aliases of the same directory get two cache entries with equal contents.
+
     Returns an immutable view of the configuration to prevent accidental modification.
     """
-    cwd = str(Path.cwd().resolve())
-    return _get_config_for_cwd(cwd)
+    return _get_config_for_cwd(str(Path.cwd()))
 
 
 def clear_config_cache() -> None:
     """Clear the configuration cache. Primarily for testing."""
     _get_config_for_cwd.cache_clear()
+
+
+class DecoratorSettings(NamedTuple):
+    """Settings resolved for one validation run."""
+
+    strict: bool
+    strict_specs: bool
+    lazy: bool
+    allow_empty: bool
+
+
+def resolve_decorator_settings(strict: bool | None, lazy: bool | None, allow_empty: bool | None) -> DecoratorSettings:
+    """Resolve the decorator settings with a single configuration lookup.
+
+    Reading the config resolves the current working directory, so doing it once per
+    validation instead of once per setting keeps that cost off the hot path.
+    """
+    config = get_config()
+    return DecoratorSettings(
+        strict=strict if strict is not None else bool(config[_KEY_STRICT]),
+        strict_specs=bool(config[_KEY_STRICT_SPECS]),
+        lazy=lazy if lazy is not None else bool(config[_KEY_LAZY]),
+        allow_empty=allow_empty if allow_empty is not None else bool(config[_KEY_ALLOW_EMPTY]),
+    )
 
 
 def _get_bool_config(param: bool | None, key: str) -> bool:

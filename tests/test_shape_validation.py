@@ -80,9 +80,9 @@ class TestRowConstraints:
 
 class TestAllowEmpty:
     def test_config_rejects_empty(self, make_df: DataFrameFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-        from daffy import decorators
+        from daffy import config
 
-        monkeypatch.setattr(decorators, "get_allow_empty", lambda x: False if x is None else x)
+        monkeypatch.setattr(config, "get_config", lambda: {**config.load_config(), "allow_empty": False})
 
         @df_out()
         def f() -> Any:
@@ -92,9 +92,9 @@ class TestAllowEmpty:
             f()
 
     def test_decorator_overrides_config(self, make_df: DataFrameFactory, monkeypatch: pytest.MonkeyPatch) -> None:
-        from daffy import decorators
+        from daffy import config
 
-        monkeypatch.setattr(decorators, "get_allow_empty", lambda x: False if x is None else x)
+        monkeypatch.setattr(config, "get_config", lambda: {**config.load_config(), "allow_empty": False})
 
         @df_out(allow_empty=True)
         def f() -> Any:
