@@ -526,3 +526,47 @@ class TestBuiltinCheckNamesStayInSync:
         assert "gtt" not in BUILTIN_CHECK_NAMES
         with pytest.raises(ValueError, match="Unknown check"):
             apply_check(pd.Series([1]), "gtt", 0)
+
+
+class TestChecksRejectMismatchedDtypes:
+    """A check that cannot mean what the caller intended is an error, not a guess.
+
+    Backends disagreed here: Pandas and PyArrow raised their own errors while Polars
+    coerced the bound to a string and compared lexicographically, reporting '10' as
+    failing `gt: 5` in a message indistinguishable from a real violation.
+    """
+
+    @pytest.mark.parametrize("backend", STRING_BACKENDS)
+    @pytest.mark.parametrize("check_name", ["gt", "ge", "lt", "le", "between"])
+    def test_ordering_check_on_string_column_is_rejected(self, backend: str, check_name: str) -> None:
+        series = strings_with_null(backend)
+        value = (0, 9) if check_name == "between" else 5
+        with pytest.raises(ValueError, match="compares order"):
+            apply_check(series, check_name, value)
+
+    @pytest.mark.parametrize("backend", NUMERIC_BACKENDS)
+    @pytest.mark.parametrize(
+        ("check_name", "check_value"),
+        [("str_regex", r"\d+"), ("str_startswith", "1"), ("str_contains", "1"), ("str_length", (1, 5))],
+    )
+    def test_string_check_on_numeric_column_is_rejected(self, backend: str, check_name: str, check_value: Any) -> None:
+        with pytest.raises(ValueError, match="needs a string column"):
+            apply_check(numeric_with_null(backend), check_name, check_value)
+
+    def test_all_null_column_is_not_second_guessed(self) -> None:
+        """Pandas reports an all-null object column as String; that must not trip the guard."""
+        fail_count, _samples = apply_check(pd.Series([None, None, None]), "gt", 0)
+        assert fail_count == 3
+
+    def test_numeric_dtype_is_trusted_even_when_empty(self) -> None:
+        """An empty Float64 column still has a reliable dtype, unlike an all-null object column."""
+        with pytest.raises(ValueError, match="needs a string column"):
+            apply_check(pd.Series([], dtype=float), "str_regex", r"\d+")
+
+    def test_empty_string_column_accepts_string_checks(self) -> None:
+        fail_count, _samples = apply_check(pd.Series([], dtype="string"), "str_regex", r"\d+")
+        assert fail_count == 0
+
+    def test_backend_failure_is_wrapped_with_context(self) -> None:
+        with pytest.raises(ValueError, match="Check 'between' could not run"):
+            apply_check(pd.Series([1, 2, 3]), "between", 5)
