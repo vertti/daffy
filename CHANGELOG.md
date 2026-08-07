@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- String checks (`str_regex`, `str_startswith`, `str_endswith`, `str_contains`) no longer raise `TypeError: bad operand type for unary ~` on Pandas object-dtype columns containing nulls; the null is reported as a check failure like on every other backend
+
 ## 2.8.0
 
 ### Changed

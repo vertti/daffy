@@ -1,10 +1,28 @@
 """Tests for value checks."""
 
+from typing import Any
+
 import narwhals as nw
 import pandas as pd
+import polars as pl
+import pyarrow as pa
 import pytest
 
 from daffy.checks import apply_check, validate_checks
+
+NUMERIC_WITH_NULL = [
+    pytest.param(pd.Series([1.0, None, 3.0]), id="pandas-float"),
+    pytest.param(pd.Series([1, None, 3], dtype="Int64"), id="pandas-nullable-int"),
+    pytest.param(pl.Series([1, None, 3]), id="polars"),
+    pytest.param(pa.chunked_array([[1, None, 3]]), id="pyarrow"),
+]
+
+STRINGS_WITH_NULL = [
+    pytest.param(pd.Series(["ab1x", None, "ab2x"]), id="pandas-object"),
+    pytest.param(pd.Series(["ab1x", None, "ab2x"], dtype="string"), id="pandas-string"),
+    pytest.param(pl.Series(["ab1x", None, "ab2x"]), id="polars"),
+    pytest.param(pa.chunked_array([["ab1x", None, "ab2x"]]), id="pyarrow"),
+]
 
 
 class TestComparisonChecks:
@@ -324,6 +342,56 @@ class TestEdgeCases:
         series = pd.Series([None, None, None])
         fail_count, _samples = apply_check(series, "gt", 0)
         assert fail_count == 3
+
+
+class TestNullsCountAsFailuresAcrossBackends:
+    """A null in a checked column is a failure on every backend, not a silently skipped row."""
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_comparison_check(self, series: Any) -> None:
+        fail_count, samples = apply_check(series, "gt", 0)
+        assert fail_count == 1
+        assert len(samples) == 1
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_between_check(self, series: Any) -> None:
+        fail_count, _samples = apply_check(series, "between", (0, 10))
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_isin_check(self, series: Any) -> None:
+        fail_count, _samples = apply_check(series, "isin", [1, 3])
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_eq_check(self, series: Any) -> None:
+        fail_count, _samples = apply_check(series, "eq", 1)
+        assert fail_count == 2
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_notnull_check(self, series: Any) -> None:
+        fail_count, _samples = apply_check(series, "notnull", True)
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("series", NUMERIC_WITH_NULL)
+    def test_custom_check(self, series: Any) -> None:
+        fail_count, _samples = apply_check(series, "positive", lambda s: s > 0)
+        assert fail_count == 1
+
+    @pytest.mark.parametrize("series", STRINGS_WITH_NULL)
+    @pytest.mark.parametrize(
+        ("check_name", "check_value"),
+        [
+            ("str_regex", r"ab\dx"),
+            ("str_startswith", "ab"),
+            ("str_endswith", "x"),
+            ("str_contains", "b"),
+            ("str_length", (4, 4)),
+        ],
+    )
+    def test_string_check(self, series: Any, check_name: str, check_value: Any) -> None:
+        fail_count, _samples = apply_check(series, check_name, check_value)
+        assert fail_count == 1
 
 
 class TestValidateChecks:
