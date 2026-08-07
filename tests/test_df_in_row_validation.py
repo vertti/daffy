@@ -134,9 +134,18 @@ class TestMaxErrorsBoundary:
     def test_lists_every_failing_row_up_to_the_limit(self) -> None:
         message = self._run_with_bad_rows(5)
         assert message.count("  Row ") == 5
-        assert message.startswith("Row validation failed for 5 out of 5 rows:")
+        assert message.startswith("Row validation failed for 5 out of 5 rows in function")
+        assert "more row" not in message
+        assert "stopped after" not in message
 
     def test_stops_listing_past_the_limit(self) -> None:
         message = self._run_with_bad_rows(8)
         assert message.count("  Row ") == 5
         assert "at least" in message
+        assert "stopped after 5 reported rows" in message
+
+    def test_does_not_understate_how_many_rows_failed(self) -> None:
+        """Counting stops at the break, so the trailer must not claim a specific remainder."""
+        message = self._run_with_bad_rows(10000)
+        assert "and 1 more row(s)" not in message
+        assert "more rows may have errors" in message

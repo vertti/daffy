@@ -91,36 +91,3 @@ class TestValidationPipeline:
 
         pipeline.add(AlwaysPassValidator())
         assert len(pipeline) == 2
-
-
-class TestSkippableValidator:
-    def test_skips_when_should_skip_returns_true(self) -> None:
-        @dataclass
-        class SkippableFailValidator:
-            def should_skip(self, ctx: ValidationContext) -> bool:  # noqa: ARG002
-                return True
-
-            def validate(self, ctx: ValidationContext) -> list[str]:  # noqa: ARG002
-                return ["Should not see this"]
-
-        ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
-        pipeline = ValidationPipeline()
-        pipeline.add(SkippableFailValidator())
-
-        pipeline.run(ctx)
-
-    def test_runs_when_should_skip_returns_false(self) -> None:
-        @dataclass
-        class NonSkippableFailValidator:
-            def should_skip(self, ctx: ValidationContext) -> bool:  # noqa: ARG002
-                return False
-
-            def validate(self, ctx: ValidationContext) -> list[str]:  # noqa: ARG002
-                return ["Expected error"]
-
-        ctx = ValidationContext(df=pd.DataFrame({"a": [1]}))
-        pipeline = ValidationPipeline()
-        pipeline.add(NonSkippableFailValidator())
-
-        with pytest.raises(AssertionError, match="Expected error"):
-            pipeline.run(ctx)

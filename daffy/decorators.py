@@ -213,7 +213,7 @@ def df_out(
         @wraps(func)
         def wrapper(*args: OutParams.args, **kwargs: OutParams.kwargs) -> IntoDataFrameT:
             result = func(*args, **kwargs)
-            nw_df = assert_is_dataframe(result, "return type")
+            nw_df = assert_is_dataframe(result, "return type", func_name=getattr(func, "__name__", ""))
             _run_validations(
                 result,
                 getattr(func, "__name__", "<unknown>"),
@@ -333,7 +333,7 @@ def df_in(
         @wraps(func)
         def wrapper(*args: InParams.args, **kwargs: InParams.kwargs) -> InReturnT:
             df, param_name, resolved_nw_df = resolver.resolve(name, *args, **kwargs)
-            nw_df = assert_is_dataframe(df, "parameter type", resolved_nw_df)
+            nw_df = assert_is_dataframe(df, "parameter type", resolved_nw_df, func_name=getattr(func, "__name__", ""))
             _run_validations(
                 df,
                 getattr(func, "__name__", "<unknown>"),

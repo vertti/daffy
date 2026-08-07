@@ -15,13 +15,14 @@ if TYPE_CHECKING:
 _POSITIONAL_KINDS = (inspect.Parameter.POSITIONAL_ONLY, inspect.Parameter.POSITIONAL_OR_KEYWORD)
 
 
-def assert_is_dataframe(obj: Any, context: str, nw_df: Any = None) -> Any:
+def assert_is_dataframe(obj: Any, context: str, nw_df: Any = None, func_name: str = "") -> Any:
     """Verify that an object is a supported DataFrame (Pandas, Polars, Modin, or PyArrow).
 
     Args:
         obj: Object to validate
         context: Context string for the error message (e.g., "parameter type", "return type")
         nw_df: Narwhals view of obj when the caller already has one, to skip re-converting
+        func_name: Decorated function, so the message says where the problem is
 
     Returns:
         The Narwhals view of the DataFrame, so callers do not convert it a second time.
@@ -30,14 +31,17 @@ def assert_is_dataframe(obj: Any, context: str, nw_df: Any = None) -> Any:
         AssertionError: If obj is not a DataFrame
 
     """
+    where = f" in function '{func_name}'" if func_name else ""
     if nw_df is None:
         try:
             nw_df = to_nw_dataframe(obj)
         except UnsupportedDataFrameError as e:
-            raise AssertionError(f"Cannot validate this DataFrame ({context}): {e}") from None
+            raise AssertionError(f"Cannot validate this DataFrame ({context}{where}): {e}") from None
     if nw_df is None:
         libs_str = " or ".join(get_available_library_names())
-        raise AssertionError(f"Wrong {context}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead.")
+        raise AssertionError(
+            f"Wrong {context}{where}. Expected {libs_str} DataFrame, got {type(obj).__name__} instead."
+        )
     return nw_df
 
 
@@ -71,7 +75,6 @@ class ParameterResolver:
         self.param_defaults = [p.default for p in self.params]
 
         self.var_pos_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_POSITIONAL), None)
-        self.var_kw_name = next((p.name for p in self.params if p.kind is inspect.Parameter.VAR_KEYWORD), None)
 
     def resolve(self, name: str | None, *args: Any, **kwargs: Any) -> tuple[Any, str | None, Any]:  # noqa: C901, PLR0911, PLR0912
         """Extract a parameter value and its name from function arguments.

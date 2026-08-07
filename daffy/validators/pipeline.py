@@ -5,9 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from daffy.validators.base import SkippableValidator, Validator
-
 if TYPE_CHECKING:
+    from daffy.validators.base import Validator
     from daffy.validators.context import ValidationContext
 
 
@@ -25,9 +24,6 @@ class ValidationPipeline:
         all_errors: list[str] = []
 
         for validator in self.validators:
-            if isinstance(validator, SkippableValidator) and validator.should_skip(ctx):
-                continue
-
             errors = validator.validate(ctx)
 
             if errors:
