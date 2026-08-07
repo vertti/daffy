@@ -1,10 +1,12 @@
 """Tests for utility functions."""
 
+import logging
 from typing import Any
 
 import pandas as pd
 import pytest
 
+from daffy import df_in, df_log, df_out
 from daffy.utils import ParameterResolver
 
 
@@ -95,3 +97,62 @@ def test_get_parameter_unnamed_falls_back_when_varkwargs_have_no_dataframe() -> 
 
     parameter_name = ParameterResolver(func).resolve(None, "metadata", retries=3, verbose=True)[1]
     assert parameter_name == "meta"
+
+
+class TestDuplicateColumnNames:
+    """Narwhals rejects duplicate column names with DuplicateError, a ValueError.
+
+    That used to escape every decorator uncaught, turning @df_log - which only logs -
+    into something that broke a working function.
+    """
+
+    @staticmethod
+    def _duplicated() -> pd.DataFrame:
+        return pd.DataFrame([[1, 2]], columns=["A", "A"])
+
+    def test_df_in_reports_it_as_a_validation_error(self) -> None:
+        @df_in(["A"])
+        def process(df: Any) -> Any:
+            return df
+
+        with pytest.raises(AssertionError, match="Cannot validate this DataFrame"):
+            process(self._duplicated())
+
+    def test_df_out_reports_it_as_a_validation_error(self) -> None:
+        @df_out(["A"])
+        def produce() -> Any:
+            return TestDuplicateColumnNames._duplicated()
+
+        with pytest.raises(AssertionError, match="Cannot validate this DataFrame"):
+            produce()
+
+    def test_df_log_does_not_break_the_function(self, caplog: pytest.LogCaptureFixture) -> None:
+        @df_log()
+        def summarize(df: Any) -> Any:
+            return df.iloc[:, [0]]
+
+        with caplog.at_level(logging.WARNING):
+            result = summarize(self._duplicated())
+
+        assert result.shape == (1, 1)
+        assert "could not be described" in caplog.text
+
+
+class TestParameterNamesPastVarargs:
+    """param_names includes keyword-only names, so indexing it by position misreports."""
+
+    def test_frame_in_varargs_is_named_as_varargs(self) -> None:
+        @df_in(columns=["missing"])
+        def process(first: Any, *rest: Any, flag: bool = False) -> Any:
+            return rest
+
+        with pytest.raises(AssertionError, match=r"parameter 'rest'"):
+            process(1, 2, pd.DataFrame({"x": [1]}))
+
+    def test_frame_in_varargs_only_signature(self) -> None:
+        @df_in(columns=["missing"])
+        def process(*frames: Any, **opts: Any) -> Any:
+            return frames
+
+        with pytest.raises(AssertionError, match=r"parameter 'frames'"):
+            process(1, pd.DataFrame({"x": [1]}))
