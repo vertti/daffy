@@ -246,7 +246,7 @@ def test_multiple_named_inputs_without_names_in_function_call(
 ) -> None:
     @df_in(name="cars", columns=["Brand", "Price"], strict=True)
     @df_in(name="ext_cars", columns=["Brand", "Price", "Year"], strict=True)
-    def test_fn(cars: pd.DataFrame, ext_cars: pd.DataFrame) -> int:
+    def test_fn(cars: IntoDataFrame, ext_cars: IntoDataFrame) -> int:
         return len(cars) + len(ext_cars)
 
     test_fn(basic_df, extended_df)
@@ -587,3 +587,52 @@ def test_df_in_string_positional_still_works(df: IntoDataFrame) -> None:
         return my_input
 
     test_fn(df)
+
+
+class TestUnnamedDfInPicksTheFirstFrame:
+    """An unnamed @df_in validates the first DataFrame it finds, args before kwargs."""
+
+    def test_first_positional_frame_wins(self) -> None:
+        @df_in(["A"])
+        def process(first: Any, second: Any) -> Any:
+            return first
+
+        with pytest.raises(AssertionError, match=r"Missing columns: \['A'\].*parameter 'first'"):
+            process(pd.DataFrame({"Z": [1]}), pd.DataFrame({"A": [1]}))
+
+    def test_positional_frame_is_preferred_over_keyword_frame(self) -> None:
+        @df_in(["A"])
+        def process(first: Any, second: Any = None) -> Any:
+            return first
+
+        with pytest.raises(AssertionError, match=r"parameter 'first'"):
+            process(pd.DataFrame({"Z": [1]}), second=pd.DataFrame({"A": [1]}))
+
+    def test_non_frame_arguments_are_skipped(self) -> None:
+        @df_in(["A"])
+        def process(config: dict[str, int], frame: Any) -> Any:
+            return frame
+
+        assert process({"k": 1}, pd.DataFrame({"A": [1]})) is not None
+
+
+class TestLazyFramesAreRejected:
+    def test_polars_lazyframe_is_not_accepted(self) -> None:
+        """eager_only=True; without it a LazyFrame is accepted and explodes later on .shape."""
+
+        @df_in(["a"])
+        def process(df: Any) -> Any:
+            return df
+
+        with pytest.raises(AssertionError, match=r"Wrong parameter type.*got LazyFrame instead"):
+            process(pl.LazyFrame({"a": [1]}))
+
+
+class TestDtypeAliases:
+    @pytest.mark.parametrize(("alias", "frame"), [("bool", {"flag": [True, False]}), ("boolean", {"flag": [True]})])
+    def test_bool_alias_is_accepted(self, alias: str, frame: dict[str, Any]) -> None:
+        @df_in({"flag": alias})
+        def process(df: Any) -> Any:
+            return df
+
+        assert process(pd.DataFrame(frame)) is not None

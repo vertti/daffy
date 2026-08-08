@@ -13,7 +13,7 @@ from tests.conftest import IntoDataFrame, cars
 @pytest.mark.parametrize(("df"), [pd.DataFrame(cars), pl.DataFrame(cars)])
 def test_log_df(df: IntoDataFrame, mocker: MockerFixture) -> None:
     @df_log()
-    def test_fn(foo_df: pd.DataFrame) -> pd.DataFrame:
+    def test_fn(foo_df: IntoDataFrame) -> IntoDataFrame:
         return foo_df
 
     mock_log = mocker.patch("daffy.decorators.logging.log")

@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
+
+from daffy.validation import ColumnConstraints
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -26,6 +29,24 @@ class ParsedColumnSpec:
         return self.required_columns + self.optional_columns
 
 
+CONSTRAINT_KEYS: frozenset[str] = frozenset(ColumnConstraints.__annotations__)
+
+
+def assert_known_constraints(col_name: str, constraints: dict[str, Any]) -> None:
+    """Reject constraint keys daffy does not implement.
+
+    A typo like `{"nullabel": False}` used to be accepted and then do nothing, which
+    means a guard the user believes is in place never runs. Deriving the valid set from
+    ColumnConstraints keeps this list from drifting out of sync with the TypedDict.
+    """
+    unknown = set(constraints) - CONSTRAINT_KEYS
+    if unknown:
+        valid = ", ".join(sorted(CONSTRAINT_KEYS))
+        raise ValueError(
+            f"Unknown constraint(s) {sorted(unknown)} for column '{col_name}'. Valid constraints are: {valid}"
+        )
+
+
 def _get_col_name(col_spec: Any) -> str | None:
     """Get column name from specification, or None if invalid.
 
@@ -43,6 +64,8 @@ def _get_col_name(col_spec: Any) -> str | None:
 
 def _parse_dict_constraints(col_name: str, constraints: dict[str, Any], result: ParsedColumnSpec) -> None:
     """Parse a dict constraint specification for a column."""
+    assert_known_constraints(col_name, constraints)
+
     is_required = constraints.get("required", True)
     if is_required:
         result.required_columns.append(col_name)
@@ -73,7 +96,7 @@ def _parse_list_spec(columns: Sequence[Any], result: ParsedColumnSpec, strict_sp
         result.required_columns.append(col_name)
 
 
-def _parse_dict_spec(columns: dict[Any, Any], result: ParsedColumnSpec, strict_specs: bool) -> None:
+def _parse_dict_spec(columns: Mapping[str, Any], result: ParsedColumnSpec, strict_specs: bool) -> None:
     """Parse a dict column specification."""
     for index, (col_spec, value) in enumerate(columns.items()):
         col_name = _get_col_name(col_spec)
@@ -92,7 +115,9 @@ def _parse_dict_spec(columns: dict[Any, Any], result: ParsedColumnSpec, strict_s
             result.dtype_constraints[col_name] = value
 
 
-def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None, strict_specs: bool = False) -> ParsedColumnSpec:
+def parse_column_spec(
+    columns: Sequence[Any] | Mapping[str, Any] | None, strict_specs: bool = False
+) -> ParsedColumnSpec:
     """Parse user-provided column specification into validator-ready format.
 
     Handles:
@@ -110,12 +135,12 @@ def parse_column_spec(columns: Sequence[Any] | dict[Any, Any] | None, strict_spe
     if columns is None:
         return result
 
-    if isinstance(columns, dict):
+    if isinstance(columns, Mapping):
         _parse_dict_spec(columns, result, strict_specs)
     elif isinstance(columns, str):
         # Treat a single string as a single column name, not a character sequence
         _parse_list_spec([columns], result, strict_specs)
     else:
-        _parse_list_spec(columns, result, strict_specs)
+        _parse_list_spec(list(columns), result, strict_specs)
 
     return result

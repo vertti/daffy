@@ -1,6 +1,6 @@
 """Validation pipeline for DataFrame validation."""
 
-from daffy.validators.base import SkippableValidator, Validator
+from daffy.validators.base import Validator
 from daffy.validators.builder import build_validation_pipeline
 from daffy.validators.checks import ChecksValidator
 from daffy.validators.columns import ColumnsExistValidator, DtypeValidator, NullableValidator, StrictModeValidator
@@ -20,7 +20,6 @@ __all__ = [
     "ParsedColumnSpec",
     "RowValidator",
     "ShapeValidator",
-    "SkippableValidator",
     "StrictModeValidator",
     "UniqueValidator",
     "ValidationContext",
