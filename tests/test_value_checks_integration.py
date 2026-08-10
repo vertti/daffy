@@ -349,3 +349,106 @@ class TestCheckNamesValidatedAtDecoration:
     def test_non_dict_checks_left_to_runtime(self) -> None:
         """Malformed `checks` is a spec-shape problem, handled by strict_specs, not here."""
         df_in(columns={"price": {"checks": "nonsense"}})
+
+
+class TestOverlappingSpecs:
+    """Two specs can name the same column - a regex and an explicit name, or two regexes."""
+
+    def test_checks_from_both_specs_apply(self) -> None:
+        @df_in(columns={"r/^col/": {"checks": {"gt": 0}}, "col1": {"checks": {"lt": 100}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="gt"):
+            process(pd.DataFrame({"col1": [-5]}))
+        with pytest.raises(AssertionError, match="lt"):
+            process(pd.DataFrame({"col1": [500]}))
+        assert to_list(process(pd.DataFrame({"col1": [5]}))["col1"]) == [5]
+
+    def test_check_merging_does_not_depend_on_spec_order(self) -> None:
+        @df_in(columns={"col1": {"checks": {"lt": 100}}, "r/^col/": {"checks": {"gt": 0}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="gt"):
+            process(pd.DataFrame({"col1": [-5]}))
+
+    @pytest.mark.parametrize(("constraint", "value"), [("nullable", False), ("unique", True)])
+    def test_overlapping_column_constraints_do_not_duplicate(self, constraint: str, value: bool) -> None:
+        """A column matched by two specs must not produce a duplicate backend expression."""
+
+        @df_in(columns={"r/^col/": {constraint: value}, "col1": {constraint: value}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"col1": [1, 2]}))["col1"]) == [1, 2]
+
+    def test_explicit_dtype_wins_over_regex_dtype(self) -> None:
+        @df_in(columns={"r/^col/": "int64", "col1": "float64"})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"col1": [1.5]}))["col1"]) == [1.5]
+
+
+class TestStrictWithoutColumnConstraints:
+    def test_empty_spec_with_strict_rejects_every_column(self) -> None:
+        @df_in([], strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        with pytest.raises(AssertionError, match="unexpected column"):
+            process(pd.DataFrame({"a": [1]}))
+
+    def test_empty_spec_with_strict_accepts_an_empty_frame(self) -> None:
+        @df_in([], strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert process(pd.DataFrame()) is not None
+
+    def test_optional_regex_columns_are_allowed_under_strict(self) -> None:
+        @df_in({"a": {"required": True}, "r/^price_/": {"required": False}}, strict=True)
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert process(pd.DataFrame({"a": [1], "price_eur": [1.0]})) is not None
+
+
+class TestConstraintKeysValidatedAtDecoration:
+    """A misspelled constraint used to be accepted and then do nothing at all."""
+
+    @pytest.mark.parametrize("decorator", [df_in, df_out])
+    @pytest.mark.parametrize("typo", ["nullabel", "uniqe", "dtpye", "requred"])
+    def test_unknown_constraint_is_rejected(self, decorator: Any, typo: str) -> None:
+        with pytest.raises(ValueError, match=f"Unknown constraint\\(s\\) \\['{typo}'\\] for column 'price'"):
+            decorator(columns={"price": {typo: False}})
+
+    def test_checks_written_without_the_checks_key_are_rejected(self) -> None:
+        """{"price": {"gt": 0}} looks reasonable but nests nothing under `checks`."""
+        with pytest.raises(ValueError, match="Unknown constraint"):
+            df_in(columns={"price": {"gt": 0}})
+
+    def test_error_lists_the_valid_constraints(self) -> None:
+        with pytest.raises(ValueError, match="dtype, nullable, required, unique"):
+            df_in(columns={"price": {"nope": 1}})
+
+    @pytest.mark.parametrize("constraint", ["nullable", "unique", "required"])
+    @pytest.mark.parametrize("bad_value", ["False", 0, 1, None])
+    def test_non_boolean_constraint_value_is_rejected(self, constraint: str, bad_value: Any) -> None:
+        with pytest.raises(TypeError, match=f"Constraint '{constraint}' for column 'price' must be True or False"):
+            df_in(columns={"price": {constraint: bad_value}})
+
+    def test_a_full_valid_spec_is_accepted(self) -> None:
+        @df_in(columns={"price": {"dtype": "int64", "nullable": False, "unique": True, "checks": {"gt": 0}}})
+        def process(df: pd.DataFrame) -> pd.DataFrame:
+            return df
+
+        assert to_list(process(pd.DataFrame({"price": [1, 2]}))["price"]) == [1, 2]
+
+    def test_constraint_keys_come_from_the_typed_dict(self) -> None:
+        """The valid set is derived, so it cannot drift from ColumnConstraints."""
+        from daffy.validation import ColumnConstraints
+        from daffy.validators.spec_parser import CONSTRAINT_KEYS
+
+        assert set(ColumnConstraints.__annotations__) == CONSTRAINT_KEYS

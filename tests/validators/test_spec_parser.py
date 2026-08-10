@@ -1,8 +1,13 @@
 """Tests for column spec parsing."""
 
+from typing import Any
+
 import pytest
 
 from daffy.validators.spec_parser import parse_column_spec
+
+# Deliberately invalid: a non-string column key, which type checkers reject.
+INVALID_KEY_SPEC: Any = {"a": "int64", 123: "int64"}
 
 
 class TestParseColumnSpec:
@@ -96,10 +101,10 @@ class TestParseColumnSpec:
             parse_column_spec(["a", 123], strict_specs=True)
 
     def test_invalid_column_key_in_dict_is_ignored_by_default(self) -> None:
-        result = parse_column_spec({"a": "int64", 123: "int64"})
+        result = parse_column_spec(INVALID_KEY_SPEC)
         assert result.required_columns == ["a"]
         assert result.dtype_constraints == {"a": "int64"}
 
     def test_invalid_column_key_in_dict_raises_when_strict_specs_enabled(self) -> None:
         with pytest.raises(TypeError, match="Invalid column key at index 1"):
-            parse_column_spec({"a": "int64", 123: "int64"}, strict_specs=True)
+            parse_column_spec(INVALID_KEY_SPEC, strict_specs=True)

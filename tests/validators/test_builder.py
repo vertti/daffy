@@ -366,3 +366,23 @@ class TestStrictSpecs:
                 allow_empty=True,
                 df_columns=["a"],
             )
+
+
+class TestOverlappingDtypeSpecs:
+    def test_first_regex_spec_wins_when_two_regexes_match(self) -> None:
+        pipeline = build_validation_pipeline(
+            columns={"r/^col/": "int64", "r/1$/": "float64"},
+            strict=False,
+            strict_specs=False,
+            lazy=False,
+            composite_unique=None,
+            row_validator=None,
+            min_rows=None,
+            max_rows=None,
+            exact_rows=None,
+            allow_empty=True,
+            df_columns=["col1"],
+        )
+
+        dtype_validator = next(v for v in pipeline.validators if isinstance(v, DtypeValidator))
+        assert dtype_validator.expected == {"col1": "int64"}

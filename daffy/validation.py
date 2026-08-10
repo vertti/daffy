@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import Any, TypeAlias, TypedDict
 
 from daffy.patterns import RegexColumnDef
@@ -22,4 +22,8 @@ class ColumnConstraints(TypedDict, total=False):
     checks: dict[str, Any]
 
 
-ColumnsDef: TypeAlias = Sequence[str | RegexColumnDef] | dict[str | RegexColumnDef, Any] | None
+# Mapping rather than dict, and str keys only: dict keys are invariant, so a
+# dict[str, ...] built elsewhere - including dict[str, ColumnConstraints] - would not be
+# assignable and only inline literals would type-check. Regex specs are written as
+# "r/pattern/" strings; RegexColumnDef is the compiled internal form.
+ColumnsDef: TypeAlias = Sequence[str | RegexColumnDef] | Mapping[str, Any] | None

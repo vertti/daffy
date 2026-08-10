@@ -53,6 +53,37 @@ def _failing_mask(valid_mask: nw.Series[Any]) -> nw.Series[Any]:
     return ~valid_mask.fill_null(True).cast(nw.Boolean())
 
 
+_STRING_ONLY_CHECKS = frozenset({"str_regex", "str_startswith", "str_endswith", "str_contains", "str_length"})
+_ORDERING_CHECKS = frozenset({"gt", "ge", "lt", "le", "between"})
+
+
+def _assert_dtype_fits_check(nws: nw.Series[Any], check_name: str) -> None:
+    """Reject checks that cannot mean what the caller intended on this column's dtype.
+
+    Without this, backends disagree: Pandas and PyArrow raise their own errors, while
+    Polars coerces the bound to a string and compares lexicographically, reporting "10"
+    as failing `gt: 5` in a message indistinguishable from a real violation.
+    """
+    is_string = nws.dtype == nw.String
+    if check_name in _STRING_ONLY_CHECKS and not is_string:
+        raise ValueError(f"Check '{check_name}' needs a string column, but this column is {nws.dtype}")
+    # Only the string side is ambiguous: Pandas reports an all-null object column as
+    # String, so a comparison there is a false alarm rather than a real mismatch.
+    if check_name in _ORDERING_CHECKS and is_string and not _has_no_values(nws):
+        raise ValueError(
+            f"Check '{check_name}' compares order, which is ambiguous on a string column. "
+            f"Convert the column to a number, or use str_length for length constraints."
+        )
+
+
+def _has_no_values(nws: nw.Series[Any]) -> bool:
+    """Report whether the column is empty or entirely null, leaving its dtype uninformative.
+
+    Only computed when a check is about to be rejected, to keep it off the hot path.
+    """
+    return len(nws) == 0 or int(nws.is_null().sum()) == len(nws)
+
+
 def _evaluate_mask(nws: nw.Series[Any], fail_mask: nw.Series[Any], max_samples: int) -> tuple[int, list[Any]]:
     """Count failures and sample failing values from a boolean mask (True = failing)."""
     nw_mask = fail_mask.fill_null(False)
@@ -122,7 +153,15 @@ def apply_check(series_or_nws: Any, check_name: str, check_value: Any, max_sampl
     if check_name not in check_masks:
         raise ValueError(f"Unknown check: {check_name}")
 
-    return _evaluate_mask(nws, check_masks[check_name](), max_samples)
+    _assert_dtype_fits_check(nws, check_name)
+    try:
+        fail_mask = check_masks[check_name]()
+    except Exception as e:
+        raise ValueError(
+            f"Check '{check_name}' could not run on a {nws.dtype} column with value {check_value!r}: {e}"
+        ) from e
+
+    return _evaluate_mask(nws, fail_mask, max_samples)
 
 
 def validate_checks(

@@ -2,11 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 3.1.0
+
+A six-angle audit of the codebase found four bugs where validation silently did not happen
+or crashed outside daffy's error contract. Everything here either closes one of those, or
+makes a failure say what went wrong.
+
+**Migrating:** column specs that were quietly doing nothing now raise when the decorator is
+applied — a misspelled constraint (`{"nullabel": False}`), a non-boolean `nullable`/`unique`/
+`required`, or a check whose dtype it cannot mean anything on. Each one was a guard that
+never ran, so the error is reporting a bug you already had.
+
+### Fixed
+
+- **Overlapping column specs no longer drop a constraint.** `{"r/^price/": {"checks": {"gt": 0}}, "price_eur": {"checks": {"lt": 100}}}` applied only one of the two checks, and which one depended on dict insertion order. Every spec that matches a column now applies. The same overlap crashed `nullable` and `unique` with a Narwhals `DuplicateError` rather than an `AssertionError`.
+- **`strict=True` is no longer ignored when the column spec is empty.** `@df_in([], strict=True)` permitted any frame; an empty spec now means no columns are permitted.
+- **Duplicate column names no longer escape as a Narwhals error.** `@df_in`/`@df_out` report them as an `AssertionError`, and `@df_log` — which only logs — warns and leaves the function working instead of raising.
+- **A check that cannot mean anything on a column's dtype is now rejected on every backend.** An ordering check on a string column, or a `str_*` check on a non-string column, previously raised a raw backend error on Pandas and PyArrow while Polars compared lexicographically and reported a violation that looked real. Other backend failures during a check are wrapped with the check name, dtype and value.
+- **Row validation no longer understates catastrophic failures.** With early termination, 10,000 failing rows out of 10,000 reported "at least 6 … and 1 more row(s)". It now says counting stopped rather than inventing a remainder.
+- **The decorators no longer erase type information.** They returned `Callable[..., T]`, which silently disabled argument type checking at every call site of a decorated function. `ColumnsDef` also rejected any spec that was not an inline literal, including `dict[str, ColumnConstraints]`.
+- Errors past a `*args` boundary named the wrong parameter, and wrong-type errors did not name the function.
 
 ### Changed
 
-- Misspelled built-in check names are now rejected when the decorator is applied instead of on the first call with data, so `{"checks": {"gtt": 0}}` fails at import time with the list of valid names. Custom checks are unaffected: a callable check value may carry any name, exactly as at runtime.
+- **Unusable column specs are rejected when the decorator is applied.** Misspelled constraint names, non-boolean `nullable`/`unique`/`required` values, and misspelled built-in check names all used to be accepted and then do nothing. Custom checks are unaffected: a callable check value may carry any name.
+
+### Performance
+
+- Another ~7% off per-call overhead (`@df_in(columns=...)` ~41µs → ~38µs, measured on a 100-row Pandas frame) by removing `SkippableValidator`, a protocol with no implementations that cost a `runtime_checkable` `isinstance` per validator per call. Total since 2.8.0 is ~212µs → ~38µs.
+
+### Removed
+
+- `daffy.validators.SkippableValidator` and the `should_skip` hook. Nothing in daffy implemented it, and `ValidationPipeline` no longer calls it. It is removed rather than deprecated deliberately: a compatibility shim would keep `from daffy.validators import SkippableValidator` working while silently never skipping anything, which is the failure mode this release exists to remove. Validators already express "nothing to do" by returning `[]`, and the builder omits validators with no work.
+
+### Documentation
+
+- Corrected five quoted error/log outputs that no longer matched what daffy prints, fixed three README documentation links that 404'd, and documented `strict_specs`, the three config keys missing from the API reference, `ColumnConstraints`, and the fact that config discovery is relative to the working directory.
 
 ## 3.0.0
 
