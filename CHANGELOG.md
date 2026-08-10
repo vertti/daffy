@@ -29,7 +29,11 @@ never ran, so the error is reporting a bug you already had.
 
 ### Performance
 
-- Another ~15% off per-call overhead (`@df_in(columns=...)` ~41µs → ~38µs) by removing `SkippableValidator`, a protocol with no implementations that cost a `runtime_checkable` `isinstance` per validator per call.
+- Another ~7% off per-call overhead (`@df_in(columns=...)` ~41µs → ~38µs, measured on a 100-row Pandas frame) by removing `SkippableValidator`, a protocol with no implementations that cost a `runtime_checkable` `isinstance` per validator per call. Total since 2.8.0 is ~212µs → ~38µs.
+
+### Removed
+
+- `daffy.validators.SkippableValidator` and the `should_skip` hook. Nothing in daffy implemented it, and `ValidationPipeline` no longer calls it. It is removed rather than deprecated deliberately: a compatibility shim would keep `from daffy.validators import SkippableValidator` working while silently never skipping anything, which is the failure mode this release exists to remove. Validators already express "nothing to do" by returning `[]`, and the builder omits validators with no work.
 
 ### Documentation
 
