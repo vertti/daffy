@@ -267,6 +267,8 @@ a comparison against null is "unknown" and is not reported, while Pandas float `
 as `False` and therefore does fail. Use `nullable=False` or the `notnull` check to constrain
 nulls explicitly — those work identically everywhere.
 
+Built-in string checks ignore null values on every backend, including Pandas object columns.
+
 **Examples:**
 
 ```python
