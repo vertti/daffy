@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Fixed
+
+- String checks ignore null values consistently, including pandas object columns with newer Narwhals versions.
+
 ## 3.1.0
 
 A six-angle audit of the codebase found four bugs where validation silently did not happen

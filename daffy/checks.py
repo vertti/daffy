@@ -156,6 +156,10 @@ def apply_check(series_or_nws: Any, check_name: str, check_value: Any, max_sampl
     _assert_dtype_fits_check(nws, check_name)
     try:
         fail_mask = check_masks[check_name]()
+        if check_name in _STRING_ONLY_CHECKS:
+            # Narwhals can turn null string matches into False on pandas object
+            # columns. Consult the source so nulls remain outside value checks.
+            fail_mask = fail_mask & ~nws.is_null()
     except Exception as e:
         raise ValueError(
             f"Check '{check_name}' could not run on a {nws.dtype} column with value {check_value!r}: {e}"

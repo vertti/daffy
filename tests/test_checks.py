@@ -24,7 +24,7 @@ def numeric_with_null(backend: str) -> Any:
 def strings_with_null(backend: str) -> Any:
     """Build ["ab1x", null, "ab2x"] on the requested backend."""
     return {
-        "pandas-object": lambda: pd.Series(["ab1x", None, "ab2x"]),
+        "pandas-object": lambda: pd.Series(["ab1x", None, "ab2x"], dtype=object),
         "pandas-string": lambda: pd.Series(["ab1x", None, "ab2x"], dtype="string"),
         "polars": lambda: pl.Series(["ab1x", None, "ab2x"]),
         "pyarrow": lambda: pa.chunked_array([["ab1x", None, "ab2x"]]),
@@ -438,11 +438,26 @@ class TestNullSemanticsFollowTheBackend:
             ("str_startswith", "ab"),
             ("str_endswith", "x"),
             ("str_contains", "b"),
+            ("str_length", (4, 4)),
         ],
     )
     def test_string_check_ignores_null(self, backend: str, check_name: str, check_value: Any) -> None:
         fail_count, _samples = apply_check(strings_with_null(backend), check_name, check_value)
         assert fail_count == 0
+
+    @pytest.mark.parametrize("backend", STRING_BACKENDS)
+    @pytest.mark.parametrize(
+        ("check_name", "check_value"),
+        [
+            ("str_regex", r"nomatch"),
+            ("str_startswith", "z"),
+            ("str_endswith", "z"),
+            ("str_contains", "z"),
+            ("str_length", (5, 9)),
+        ],
+    )
+    def test_string_check_samples_exclude_null(self, backend: str, check_name: str, check_value: Any) -> None:
+        assert apply_check(strings_with_null(backend), check_name, check_value) == (2, ["ab1x", "ab2x"])
 
     @pytest.mark.parametrize("backend", STRING_BACKENDS)
     def test_string_check_does_not_crash_on_pandas_object_nulls(self, backend: str) -> None:
