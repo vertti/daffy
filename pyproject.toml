@@ -61,7 +61,7 @@ test = [
 dev = [
     "ruff==0.16.6",
     "pyrefly==1.2.0",
-    "skylos==4.35.0",
+    "skylos==4.36.0",
     "vulture==2.16",
     "coverage[toml]==7.16.0",
     "pytest-cov==7.1.0",
