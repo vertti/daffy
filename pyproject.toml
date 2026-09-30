@@ -48,7 +48,7 @@ issues = "https://github.com/vertti/daffy/issues"
 [dependency-groups]
 test = [
     "pytest==9.1.1",
-    "pytest-mock==3.15.1",
+    "pytest-mock==3.16.0",
     "pandas>=1.5.1",
     "polars>=1.7.0",
     "pydantic>=2.4.0",
