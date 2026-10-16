@@ -59,13 +59,13 @@ test = [
 
 # Development tools - pinned for dependabot updates
 dev = [
-    "ruff==0.17.0",
-    "pyrefly==1.3.2",
-    "skylos==4.47.2",
+    "ruff==0.17.1",
+    "pyrefly==1.4.0",
+    "skylos==4.50.1",
     "vulture==2.16",
     "coverage[toml]==7.16.2",
     "pytest-cov==7.1.0",
-    "pre-commit==4.6.2",
+    "pre-commit==4.7.0",
     "zensical==0.0.67",
 ]
 
