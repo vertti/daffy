@@ -60,7 +60,7 @@ Notes:
 
 ## Design Constraints
 
-- Python compatibility: 3.10+
+- Python compatibility: 3.11+
 - Narwhals-based runtime abstractions
 - Keep default validation overhead low
 - Avoid silent behavior changes in decorators

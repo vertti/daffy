@@ -4,9 +4,9 @@
   "mode": "full",
   "prHourlyLimit": 10,
   "constraints": {
-    "python": ">=3.10"
+    "python": ">=3.11"
   },
-  "ignoreDeps": ["tomli", "narwhals"],
+  "ignoreDeps": ["narwhals"],
   "packageRules": [
     {
       "groupName": "dev-dependencies",

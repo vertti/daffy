@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## Unreleased
 
+### Breaking Changes
+
+- **Dropped Python 3.10 support** - Python 3.11 is now the minimum required version (Python 3.10 reached end-of-life in October 2026)
+
+### Changed
+
+- Removed the `tomli` runtime dependency; configuration is read with the standard library `tomllib`
+
 ### Fixed
 
 - String checks ignore null values consistently, including pandas object columns with newer Narwhals versions.

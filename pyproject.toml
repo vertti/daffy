@@ -6,7 +6,7 @@ authors = [
  { name="Janne Sinivirta", email="janne.sinivirta@gmail.com" },
 ]
 license = "MIT"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.md"
 keywords = ["pandas", "polars", "modin", "pyarrow", "narwhals", "pydantic", "dataframe", "decorator", "validation", "schema", "data-validation", "typing", "data-quality", "column-validation", "dataframe-schema", "row-validation", "runtime-validation", "data-pipeline", "pandas-validation", "polars-validation", "validate-dataframe", "dataframe-validator"]
 classifiers = [
@@ -15,7 +15,6 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -29,7 +28,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "tomli>=2.0.0",
     "narwhals>=2.14.0",
 ]
 
@@ -115,7 +113,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py311"
 
 [tool.ruff.format]
 # Ruff 0.16 formats Python inside Markdown code fences; docs examples are laid out
@@ -190,6 +188,6 @@ ignore = [
 ]
 
 [tool.pyrefly]
-python-version = "3.10"
+python-version = "3.11"
 untyped-def-behavior = "check-and-infer-return-any"
 permissive-ignores = true

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+import tomllib
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
 from typing import Any, NamedTuple
-
-import tomli
 
 # Configuration keys
 _KEY_STRICT = "strict"
@@ -46,7 +45,7 @@ def load_config(cwd: Path | None = None) -> dict[str, Any]:
 
     try:
         with Path(config_path).open("rb") as f:
-            daffy_config = tomli.load(f).get("tool", {}).get("daffy", {})
+            daffy_config = tomllib.load(f).get("tool", {}).get("daffy", {})
 
         for key, default_value in _DEFAULTS.items():
             if key in daffy_config:
@@ -60,7 +59,7 @@ def load_config(cwd: Path | None = None) -> dict[str, Any]:
                     if val < 1:
                         raise ValueError(f"Config '{key}' must be >= 1, got {val}")
                 config[key] = val
-    except (FileNotFoundError, tomli.TOMLDecodeError):
+    except (FileNotFoundError, tomllib.TOMLDecodeError):
         pass
 
     return config

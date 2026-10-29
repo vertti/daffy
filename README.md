@@ -30,7 +30,7 @@ or with conda:
 conda install -c conda-forge daffy
 ```
 
-Works with whatever DataFrame library you already have installed. Python 3.10–3.14.
+Works with whatever DataFrame library you already have installed. Python 3.11–3.14.
 
 ---
 
