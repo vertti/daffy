@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import warnings
 from functools import lru_cache
 from pathlib import Path
 from types import MappingProxyType
@@ -44,26 +45,37 @@ def load_config(cwd: Path | None = None) -> dict[str, Any]:
     if not config_path:
         return config
 
-    try:
-        with Path(config_path).open("rb") as f:
-            daffy_config = tomli.load(f).get("tool", {}).get("daffy", {})
+    daffy_config = _read_daffy_section(config_path)
 
-        for key, default_value in _DEFAULTS.items():
-            if key in daffy_config:
-                val = daffy_config[key]
-                if isinstance(default_value, bool):
-                    if not isinstance(val, bool):
-                        raise TypeError(f"Config '{key}' must be a boolean, got {type(val).__name__}: {val!r}")
-                else:  # isinstance(default_value, int)
-                    if not isinstance(val, int) or isinstance(val, bool):
-                        raise TypeError(f"Config '{key}' must be an integer, got {type(val).__name__}: {val!r}")
-                    if val < 1:
-                        raise ValueError(f"Config '{key}' must be >= 1, got {val}")
-                config[key] = val
-    except (FileNotFoundError, tomli.TOMLDecodeError):
-        pass
+    for key, default_value in _DEFAULTS.items():
+        if key in daffy_config:
+            val = daffy_config[key]
+            if isinstance(default_value, bool):
+                if not isinstance(val, bool):
+                    raise TypeError(f"Config '{key}' must be a boolean, got {type(val).__name__}: {val!r}")
+            else:  # isinstance(default_value, int)
+                if not isinstance(val, int) or isinstance(val, bool):
+                    raise TypeError(f"Config '{key}' must be an integer, got {type(val).__name__}: {val!r}")
+                if val < 1:
+                    raise ValueError(f"Config '{key}' must be >= 1, got {val}")
+            config[key] = val
 
     return config
+
+
+def _read_daffy_section(config_path: str) -> dict[str, Any]:
+    try:
+        raw = Path(config_path).read_bytes()
+    except FileNotFoundError:
+        return {}
+
+    try:
+        return tomli.loads(raw.decode()).get("tool", {}).get("daffy", {})
+    except tomli.TOMLDecodeError as e:
+        if b"tool.daffy" in raw:
+            raise ValueError(f"Cannot read [tool.daffy] settings: {config_path} is not valid TOML: {e}") from e
+        warnings.warn(f"daffy is using default settings: {config_path} is not valid TOML: {e}", stacklevel=2)
+        return {}
 
 
 def find_config_file(cwd: Path | None = None) -> str | None:

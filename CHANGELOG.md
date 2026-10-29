@@ -11,6 +11,7 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - `tomli` minimum raised to 2.4.0 so `pyproject.toml` files using TOML 1.1 syntax no longer silently discard `[tool.daffy]` settings
+- An unparseable `pyproject.toml` no longer silently falls back to default settings. If it contains `tool.daffy`, validation raises `ValueError` naming the file; otherwise daffy emits a `UserWarning` and uses defaults
 
 ### Fixed
 

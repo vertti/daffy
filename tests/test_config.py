@@ -123,14 +123,25 @@ def test_config_survives_toml_1_1_syntax_elsewhere_in_pyproject(tmp_path: Path) 
         assert get_config()["strict"] is True
 
 
-def test_load_config_returns_default_when_toml_malformed(tmp_path: Path) -> None:
+def test_malformed_pyproject_without_daffy_section_warns_and_uses_defaults(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("invalid toml [[[", encoding="utf-8")
 
     with patch("daffy.config.Path.cwd", return_value=tmp_path):
         clear_config_cache()
 
-        config = get_config()
+        with pytest.warns(UserWarning, match="pyproject.toml"):
+            config = get_config()
         assert config["strict"] is False
+
+
+def test_malformed_pyproject_with_daffy_section_raises(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text("[tool.daffy]\nstrict = true\ninvalid toml [[[\n", encoding="utf-8")
+
+    with patch("daffy.config.Path.cwd", return_value=tmp_path):
+        clear_config_cache()
+
+        with pytest.raises(ValueError, match=r"pyproject\.toml"):
+            get_config()
 
 
 def test_find_config_file_returns_none_when_no_pyproject_exists(tmp_path: Path) -> None:
