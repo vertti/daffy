@@ -28,6 +28,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "tomli>=2.4.0",
     "narwhals>=2.14.0",
 ]
 

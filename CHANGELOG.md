@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
-- Removed the `tomli` runtime dependency; configuration is read with the standard library `tomllib`
+- `tomli` minimum raised to 2.4.0 so `pyproject.toml` files using TOML 1.1 syntax no longer silently discard `[tool.daffy]` settings
 
 ### Fixed
 

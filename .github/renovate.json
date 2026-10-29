@@ -6,7 +6,7 @@
   "constraints": {
     "python": ">=3.11"
   },
-  "ignoreDeps": ["narwhals"],
+  "ignoreDeps": ["tomli", "narwhals"],
   "packageRules": [
     {
       "groupName": "dev-dependencies",
