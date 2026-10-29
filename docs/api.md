@@ -300,3 +300,6 @@ Configuration is read from the `pyproject.toml` in the current working directory
 directory. Discovery starts at the process working directory, not at your module, so running the
 same code from a different directory can pick up a different configuration — worth knowing in a
 monorepo, or when a service runs with a `WORKDIR` that differs from your development checkout.
+
+If that file is not valid TOML and mentions `tool.daffy`, validation raises `ValueError`. If it does
+not mention `tool.daffy`, daffy emits a `UserWarning` and uses the defaults.
