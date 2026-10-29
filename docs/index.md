@@ -54,7 +54,7 @@ If a column is missing, has wrong dtype, or violates a constraint — **Daffy fa
     conda install -c conda-forge daffy
     ```
 
-Works with whatever DataFrame library you already have installed. Python 3.10–3.14.
+Works with whatever DataFrame library you already have installed. Python 3.11–3.14.
 
 ## Why Daffy?
 

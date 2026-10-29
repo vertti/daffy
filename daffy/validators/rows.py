@@ -44,7 +44,7 @@ class RowValidator:
         for idx, row in enumerate(ctx.nw_df.iter_rows(named=True)):
             try:
                 self.model.model_validate(row)  # pyright: ignore[reportAttributeAccessIssue]
-            except ValidationError as e:  # noqa: PERF203
+            except ValidationError as e:
                 total_errors += 1
                 if len(failed_rows) < max_errors:
                     failed_rows.append((idx, e))

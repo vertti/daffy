@@ -112,6 +112,17 @@ def test_load_config_returns_default_when_file_not_found() -> None:
         assert config["strict"] is False
 
 
+def test_config_survives_toml_1_1_syntax_elsewhere_in_pyproject(tmp_path: Path) -> None:
+    (tmp_path / "pyproject.toml").write_text(
+        "[tool.other]\nsettings = { enabled = true, }\n\n[tool.daffy]\nstrict = true\n", encoding="utf-8"
+    )
+
+    with patch("daffy.config.Path.cwd", return_value=tmp_path):
+        clear_config_cache()
+
+        assert get_config()["strict"] is True
+
+
 def test_load_config_returns_default_when_toml_malformed(tmp_path: Path) -> None:
     (tmp_path / "pyproject.toml").write_text("invalid toml [[[", encoding="utf-8")
 

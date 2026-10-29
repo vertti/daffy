@@ -2,7 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
-## Unreleased
+## 3.2.0
+
+### Breaking Changes
+
+- **Dropped Python 3.10 support** - Python 3.11 is now the minimum required version (Python 3.10 reached end-of-life in October 2026)
+
+### Changed
+
+- `tomli` minimum raised to 2.4.0 so `pyproject.toml` files using TOML 1.1 syntax no longer silently discard `[tool.daffy]` settings
 
 ### Fixed
 
