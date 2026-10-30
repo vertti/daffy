@@ -3,6 +3,7 @@
   "extends": ["config:best-practices"],
   "mode": "full",
   "prHourlyLimit": 10,
+  "minimumReleaseAge": "7 days",
   "constraints": {
     "python": ">=3.11"
   },
@@ -17,7 +18,8 @@
         "skylos",
         "coverage",
         "pytest-cov",
-        "pre-commit"
+        "pre-commit",
+        "hypothesis"
       ],
       "automerge": true
     },
@@ -25,6 +27,11 @@
       "groupName": "dev-dependencies",
       "matchManagers": ["mise"],
       "matchDepNames": ["uv"],
+      "automerge": true
+    },
+    {
+      "groupName": "dev-dependencies",
+      "matchDepNames": ["zensical"],
       "automerge": true
     },
     {
