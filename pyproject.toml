@@ -72,6 +72,9 @@ dev = [
 requires = ["hatchling>=1.18.0"]
 build-backend = "hatchling.build"
 
+[tool.uv]
+exclude-newer = "7 days"
+
 [tool.hatch.build]
 include = [
     "daffy/**/*.py",
