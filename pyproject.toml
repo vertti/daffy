@@ -40,8 +40,8 @@ pydantic = [
 [project.urls]
 homepage = "https://github.com/vertti/daffy"
 repository = "https://github.com/vertti/daffy"
-documentation = "https://github.com/vertti/daffy/blob/master/README.md"
-changelog = "https://github.com/vertti/daffy/blob/master/CHANGELOG.md"
+documentation = "https://github.com/vertti/daffy/blob/main/README.md"
+changelog = "https://github.com/vertti/daffy/blob/main/CHANGELOG.md"
 issues = "https://github.com/vertti/daffy/issues"
 
 [dependency-groups]
