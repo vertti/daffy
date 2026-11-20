@@ -6,7 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
-- **Python 3.15 support.** Modin is not tested on 3.15 because Ray does not ship 3.15 wheels yet.
+- **Python 3.15 support.** pandas 3, Polars and PyArrow are tested on 3.15.
+  - Modin is not tested on 3.15: Ray, its default engine, has no 3.15 wheels yet ([ray-project/ray#61200](https://github.com/ray-project/ray/issues/61200)).
+  - pandas 2.x has no 3.15 wheels; use pandas 3 on Python 3.15.
 
 ## 3.2.0
 
