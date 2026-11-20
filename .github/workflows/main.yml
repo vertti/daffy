@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.11", "3.12", "3.13", "3.14", "3.15"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -44,7 +44,7 @@ jobs:
       - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5
 
       - name: Set up Python and dependencies
-        run: uv sync --group test --group dev
+        run: uv sync --python 3.14 --group test --group dev
 
       - name: Lint and type check
         run: |
@@ -67,7 +67,7 @@ jobs:
       - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5
 
       - name: Set up Python and dependencies
-        run: uv sync --group test --group dev
+        run: uv sync --python 3.14 --group test --group dev
 
       - name: Test with coverage
         run: uv run pytest --cov --cov-report=xml tests/
@@ -86,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.14"]
+        python-version: ["3.11", "3.15"]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -106,8 +106,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.14"]
+        python-version: ["3.11", "3.15"]
         scenario: ["pandas-only", "polars-only", "pyarrow-only", "modin-only", "both", "pandas-no-pydantic", "none", "pandas-2.x-only", "pandas-3.x-only"]
+        # No cp315 wheels yet for ray (modin's engine) or pandas 2.x
+        exclude:
+          - python-version: "3.15"
+            scenario: "modin-only"
+          - python-version: "3.15"
+            scenario: "pandas-2.x-only"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

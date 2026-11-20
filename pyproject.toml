@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: MIT License",
     "Framework :: Pydantic",
@@ -49,9 +50,11 @@ test = [
     "pytest==9.2.0",
     "pytest-mock==3.17.0",
     "pandas>=1.5.1",
+    "pandas>=3.0.0; python_version >= '3.15'",
     "polars>=1.7.0",
     "pydantic>=2.4.0",
-    "modin[ray]>=0.30.0",
+    # ray has no cp315 wheels yet: https://github.com/ray-project/ray/issues/61200
+    "modin[ray]>=0.30.0; python_version < '3.15'",
     "pyarrow>=14.0.0",
     "hypothesis==6.170.15",
 ]
