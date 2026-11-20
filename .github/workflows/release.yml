@@ -17,6 +17,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
+          fetch-depth: 0
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          awk -v v="${GITHUB_REF_NAME#v}" '$0 == "## " v {f=1; next} /^## / {f=0} f' CHANGELOG.md > release-notes.md
+          test -s release-notes.md
+          prev=$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^")
+          printf '\n**Full Changelog**: %s/%s/compare/%s...%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$prev" "$GITHUB_REF_NAME" >> release-notes.md
 
       - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5
         with:
@@ -33,4 +41,4 @@ jobs:
         uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3
         with:
           files: dist/*
-          generate_release_notes: true
+          body_path: release-notes.md
