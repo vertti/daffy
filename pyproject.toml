@@ -51,7 +51,7 @@ test = [
     "pandas>=1.5.1",
     "polars>=1.7.0",
     "pydantic>=2.4.0",
-    "modin[ray]>=0.30.0; python_version < '3.14'",
+    "modin[ray]>=0.30.0",
     "pyarrow>=14.0.0",
     "hypothesis==6.170.13",
 ]
