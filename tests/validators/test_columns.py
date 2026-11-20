@@ -88,7 +88,7 @@ class TestParameterisedDtypes:
         assert DtypeValidator({"c": expected}).validate(ctx) == []
 
     def test_full_parameterised_spelling_still_accepted(self) -> None:
-        ctx = ValidationContext(df=pd.DataFrame({"c": pd.to_datetime(["2024-01-01"])}))
+        ctx = ValidationContext(df=pd.DataFrame({"c": pd.to_datetime(["2024-01-01"]).as_unit("ns")}))
         assert DtypeValidator({"c": "datetime(time_unit='ns', time_zone=none)"}).validate(ctx) == []
 
     def test_parameters_are_enforced_when_spelled_out(self) -> None:

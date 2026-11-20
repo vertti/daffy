@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Unreleased
+
+### Added
+
+- **Python 3.15 support.** Modin is not tested on 3.15 because Ray does not ship 3.15 wheels yet.
+
 ## 3.2.0
 
 ### Breaking Changes
