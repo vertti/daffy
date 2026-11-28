@@ -65,10 +65,10 @@ dev = [
     "pyrefly==1.5.0",
     "skylos==5.7.0",
     "vulture==2.16",
-    "coverage[toml]==7.17.3",
+    "coverage[toml]==7.17.4",
     "pytest-cov==7.1.0",
     "pre-commit==4.7.0",
-    "zensical==0.1.2",
+    "zensical==0.1.3",
 ]
 
 [build-system]
